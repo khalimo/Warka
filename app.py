@@ -18,8 +18,10 @@ from dotenv import load_dotenv
 from openai import APIStatusError, OpenAI, RateLimitError
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
+
+from sources import NEWS_SOURCES, SOURCE_BY_NAME
 
 
 load_dotenv()
@@ -60,7 +62,7 @@ def normalize_database_url(url: str) -> str:
 
 class Config:
     APP_NAME = "Somali News Lens"
-    VERSION = "3.1.0"
+    VERSION = "4.0.0"
 
     DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///news.db"))
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -74,18 +76,16 @@ class Config:
 
     CACHE_TTL_SECONDS = env_int("CACHE_TTL_SECONDS", 300, 30)
     MAX_ARTICLES_PER_FEED = env_int("MAX_ARTICLES_PER_FEED", 12, 1)
+    MAX_FEEDS_PER_RUN = env_int("MAX_FEEDS_PER_RUN", 18, 1)
+    FEED_CONCURRENCY = env_int("FEED_CONCURRENCY", 6, 1)
     FEED_TIMEOUT_SECONDS = env_int("FEED_TIMEOUT_SECONDS", 12, 3)
     MAX_AI_CLASSIFICATIONS_PER_RUN = env_int("MAX_AI_CLASSIFICATIONS_PER_RUN", 8, 0)
+    EDITOR_INVITE_CODE = os.getenv("EDITOR_INVITE_CODE", "").strip()
 
     CLUSTER_EPS = env_float("CLUSTER_EPS", 0.46, 0.05)
     CLUSTER_MIN_SAMPLES = env_int("CLUSTER_MIN_SAMPLES", 2, 1)
 
-    FEEDS = [
-        {"name": "BBC World", "url": "http://feeds.bbci.co.uk/news/world/rss.xml", "region": "international"},
-        {"name": "Al Jazeera", "url": "https://www.aljazeera.com/xml/rss/all.xml", "region": "international"},
-        {"name": "Garowe Online", "url": "https://www.garoweonline.com/en/rss", "region": "somalia"},
-        {"name": "Hiiraan Online", "url": "https://www.hiiraan.com/rss.xml", "region": "somalia"},
-    ]
+    FEEDS = NEWS_SOURCES[:MAX_FEEDS_PER_RUN]
 
 
 logging.basicConfig(
@@ -152,7 +152,12 @@ def badge(text_value: object, tone: str = "neutral") -> str:
     )
 
 
-def inject_css() -> None:
+def inject_css(mode: str = "Reader Mode") -> None:
+    sidebar_rule = (
+        "section[data-testid=\"stSidebar\"] {display:none;}"
+        if mode == "Reader Mode"
+        else "section[data-testid=\"stSidebar\"] {background:#fbfcfd;border-right:1px solid var(--snl-line);}"
+    )
     st.markdown(
         """
         <style>
@@ -170,16 +175,15 @@ def inject_css() -> None:
             padding-bottom: 2.2rem;
             max-width: 1280px;
         }
+        """
+        + sidebar_rule
+        + """
         h1, h2, h3 {
             color: var(--snl-ink);
             letter-spacing: 0;
         }
         p, li, label, .stMarkdown {
             color: var(--snl-ink);
-        }
-        section[data-testid="stSidebar"] {
-            background: #fbfcfd;
-            border-right: 1px solid var(--snl-line);
         }
         .snl-shell {
             border: 1px solid var(--snl-line);
@@ -280,6 +284,178 @@ def inject_css() -> None:
             padding: 12px;
             background: #fff;
         }
+        .public-masthead {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-end;
+            border-bottom: 2px solid #1f2933;
+            padding: 10px 0 14px 0;
+            margin-bottom: 12px;
+        }
+        .public-brand {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 2.45rem;
+            font-weight: 700;
+            color: var(--snl-ink);
+            line-height: 1;
+        }
+        .brand-kicker, .section-kicker {
+            color: var(--snl-accent);
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+        .masthead-note {
+            max-width: 360px;
+            color: var(--snl-muted);
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        .section-heading {
+            border-top: 1px solid var(--snl-line);
+            padding-top: 18px;
+            margin: 24px 0 12px 0;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: var(--snl-ink);
+        }
+        .reader-intro {
+            color: var(--snl-muted);
+            font-size: 1rem;
+            max-width: 760px;
+        }
+        .article-card {
+            border-top: 1px solid var(--snl-line);
+            padding: 14px 0 16px 0;
+            min-height: 150px;
+        }
+        .article-card-hero {
+            border: 1px solid var(--snl-line);
+            border-radius: 8px;
+            padding: 22px;
+            background: #ffffff;
+            min-height: 360px;
+        }
+        .article-card h2 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.35rem;
+            line-height: 1.2;
+            margin: 8px 0;
+        }
+        .article-card-hero h2 {
+            font-size: 2.35rem;
+        }
+        .article-card p,
+        .compare-card p,
+        .source-perspective p,
+        .about-panel p {
+            color: var(--snl-muted);
+            line-height: 1.55;
+            margin-bottom: 8px;
+        }
+        .article-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+        .article-footer {
+            margin-top: 12px;
+        }
+        .story-link {
+            color: var(--snl-accent);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .compact-story {
+            border-top: 1px solid var(--snl-line);
+            padding: 12px 0;
+        }
+        .compact-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.25;
+            color: var(--snl-ink);
+            margin-bottom: 6px;
+        }
+        .rail-title {
+            font-weight: 800;
+            color: var(--snl-ink);
+            margin-bottom: 4px;
+        }
+        .compare-card {
+            border: 1px solid var(--snl-line);
+            border-radius: 8px;
+            padding: 18px;
+            margin: 14px 0 10px 0;
+            background: #fbfcfd;
+        }
+        .compare-card h3 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.45rem;
+            margin: 6px 0;
+        }
+        .source-perspective {
+            border: 1px solid var(--snl-line);
+            border-radius: 8px;
+            padding: 14px;
+            background: #ffffff;
+            min-height: 210px;
+            margin-bottom: 12px;
+        }
+        .perspective-title {
+            font-weight: 750;
+            line-height: 1.3;
+            margin: 8px 0;
+            color: var(--snl-ink);
+        }
+        .reader-empty, .about-panel, .insights-header {
+            border: 1px solid var(--snl-line);
+            border-radius: 8px;
+            padding: 20px;
+            background: #ffffff;
+            margin: 12px 0;
+        }
+        .empty-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-weight: 700;
+            font-size: 1.35rem;
+            color: var(--snl-ink);
+            margin-bottom: 6px;
+        }
+        .public-footer {
+            border-top: 1px solid var(--snl-line);
+            margin-top: 28px;
+            padding-top: 14px;
+            color: var(--snl-muted);
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            font-size: 0.88rem;
+        }
+        .insights-header h1 {
+            font-size: 1.8rem;
+            margin: 6px 0;
+        }
+        @media (max-width: 760px) {
+            .public-masthead, .public-footer {
+                display: block;
+            }
+            .masthead-note {
+                text-align: left;
+                margin-top: 8px;
+            }
+            .public-brand {
+                font-size: 1.9rem;
+            }
+            .article-card-hero h2 {
+                font-size: 1.75rem;
+            }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -335,6 +511,8 @@ def init_db(engine: Engine) -> None:
                 source TEXT NOT NULL,
                 source_url TEXT,
                 region TEXT,
+                section TEXT DEFAULT 'Somalia',
+                source_category TEXT,
                 language TEXT DEFAULT 'en',
                 published_at TIMESTAMP NULL,
                 fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -353,9 +531,18 @@ def init_db(engine: Engine) -> None:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """))
+        existing_columns = {column["name"] for column in inspect(conn).get_columns("stories")}
+        for column_name, column_sql in {
+            "section": "section TEXT DEFAULT 'Somalia'",
+            "source_category": "source_category TEXT",
+        }.items():
+            if column_name not in existing_columns:
+                conn.execute(text(f"ALTER TABLE stories ADD COLUMN {column_sql}"))
+
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_hash ON stories(article_hash)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_source ON stories(source)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_region ON stories(region)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_section ON stories(section)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_fetched_at ON stories(fetched_at)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_bias ON stories(bias)"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS idx_stories_cluster_label ON stories(cluster_label)"))
@@ -390,6 +577,7 @@ def parse_feed_datetime(entry) -> Optional[datetime]:
 def init_session_state() -> None:
     st.session_state.setdefault("user", None)
     st.session_state.setdefault("login_time", None)
+    st.session_state.setdefault("source_status", {})
 
 
 def logout() -> None:
@@ -447,9 +635,11 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def register_user(username: str, password: str, email: Optional[str]) -> tuple[bool, str]:
+def register_user(username: str, password: str, email: Optional[str], invite_code: str = "") -> tuple[bool, str]:
     username = clean_text(username, 60).strip()
     email = clean_text(email, 254).lower() if email else None
+    if Config.EDITOR_INVITE_CODE and invite_code.strip() != Config.EDITOR_INVITE_CODE:
+        return False, "Enter the editor invite code to create an account."
     if not valid_username(username):
         return False, "Username must be 3-32 characters using letters, numbers, dots, dashes, or underscores."
     ok, message = valid_password(password)
@@ -637,11 +827,23 @@ def summarize_cluster_with_ai(items: list[dict]) -> str:
     return "Coverage appears to describe the same developing story. Compare source summaries below for framing differences."
 
 
-async def fetch_single_feed(session: aiohttp.ClientSession, feed_def: dict) -> tuple[str, list[dict], Optional[str]]:
+async def fetch_single_feed(session: aiohttp.ClientSession, feed_def: dict) -> tuple[list[dict], dict]:
+    status = {
+        "name": feed_def["name"],
+        "url": feed_def["url"],
+        "region": feed_def.get("region", "unknown"),
+        "section": feed_def.get("section", "Somalia"),
+        "category": feed_def.get("category", "News"),
+        "status": "failed",
+        "item_count": 0,
+        "error": "",
+        "checked_at": utc_now(),
+    }
     try:
         async with session.get(feed_def["url"], timeout=aiohttp.ClientTimeout(total=Config.FEED_TIMEOUT_SECONDS)) as resp:
             if resp.status >= 400:
-                return feed_def["name"], [], f"HTTP {resp.status}"
+                status["error"] = f"HTTP {resp.status}"
+                return [], status
             body = await resp.text()
             parsed = feedparser.parse(body)
 
@@ -666,32 +868,44 @@ async def fetch_single_feed(session: aiohttp.ClientSession, feed_def: dict) -> t
                     "content": content,
                     "source": feed_def["name"],
                     "source_url": source_url,
-                    "region": feed_def["region"],
-                    "language": "en",
+                    "region": feed_def.get("region", "unknown"),
+                    "section": feed_def.get("section", "Somalia"),
+                    "source_category": feed_def.get("category", "News"),
+                    "language": feed_def.get("language", "en"),
                     "published_at": parse_feed_datetime(entry),
                     "fetched_at": utc_now(),
                     "article_hash": hash_article(title, source_url, feed_def["name"]),
                 }
             )
-        return feed_def["name"], articles, None
+        status["status"] = "healthy" if articles else "warning"
+        status["item_count"] = len(articles)
+        if not articles:
+            status["error"] = "No parseable entries"
+        return articles, status
     except Exception as exc:
         logger.warning("Feed fetch failed for %s: %s", feed_def["name"], exc)
-        return feed_def["name"], [], str(exc.__class__.__name__)
+        status["error"] = str(exc.__class__.__name__)
+        return [], status
 
 
-async def fetch_all_feeds_async() -> tuple[list[dict], list[str]]:
+async def fetch_all_feeds_async() -> tuple[list[dict], list[dict]]:
+    semaphore = asyncio.Semaphore(Config.FEED_CONCURRENCY)
+
+    async def guarded_fetch(feed_def: dict) -> tuple[list[dict], dict]:
+        async with semaphore:
+            return await fetch_single_feed(session, feed_def)
+
     async with aiohttp.ClientSession(headers={"User-Agent": f"{Config.APP_NAME}/{Config.VERSION}"}) as session:
-        results = await asyncio.gather(*(fetch_single_feed(session, feed_def) for feed_def in Config.FEEDS))
+        results = await asyncio.gather(*(guarded_fetch(feed_def) for feed_def in Config.FEEDS))
     articles = []
-    warnings = []
-    for source, rows, error in results:
+    statuses = []
+    for rows, status in results:
         articles.extend(rows)
-        if error:
-            warnings.append(f"{source}: {error}")
-    return articles, warnings
+        statuses.append(status)
+    return articles, statuses
 
 
-def fetch_all_feeds() -> tuple[list[dict], list[str]]:
+def fetch_all_feeds() -> tuple[list[dict], list[dict]]:
     try:
         return asyncio.run(fetch_all_feeds_async())
     except RuntimeError:
@@ -702,7 +916,19 @@ def fetch_all_feeds() -> tuple[list[dict], list[str]]:
             loop.close()
     except Exception as exc:
         logger.warning("Feed fetch orchestration failed: %s", exc)
-        return [], [str(exc.__class__.__name__)]
+        return [], [
+            {
+                "name": "Feed runner",
+                "url": "",
+                "region": "system",
+                "section": "Operations",
+                "category": "System",
+                "status": "failed",
+                "item_count": 0,
+                "error": str(exc.__class__.__name__),
+                "checked_at": utc_now(),
+            }
+        ]
 
 
 def enrich_articles(articles: list[dict]) -> tuple[list[dict], dict]:
@@ -726,12 +952,12 @@ def insert_articles(articles: list[dict]) -> int:
         statement = text("""
             INSERT INTO stories (
                 article_hash, title, summary, content,
-                source, source_url, region, language,
+                source, source_url, region, section, source_category, language,
                 published_at, fetched_at, bias, bias_confidence, ai_summary, cluster_label
             )
             VALUES (
                 :article_hash, :title, :summary, :content,
-                :source, :source_url, :region, :language,
+                :source, :source_url, :region, :section, :source_category, :language,
                 :published_at, :fetched_at, :bias, :bias_confidence, :ai_summary, :cluster_label
             )
             ON CONFLICT (article_hash) DO NOTHING
@@ -740,12 +966,12 @@ def insert_articles(articles: list[dict]) -> int:
         statement = text("""
             INSERT OR IGNORE INTO stories (
                 article_hash, title, summary, content,
-                source, source_url, region, language,
+                source, source_url, region, section, source_category, language,
                 published_at, fetched_at, bias, bias_confidence, ai_summary, cluster_label
             )
             VALUES (
                 :article_hash, :title, :summary, :content,
-                :source, :source_url, :region, :language,
+                :source, :source_url, :region, :section, :source_category, :language,
                 :published_at, :fetched_at, :bias, :bias_confidence, :ai_summary, :cluster_label
             )
         """)
@@ -763,6 +989,8 @@ def insert_articles(articles: list[dict]) -> int:
                     "source": article["source"],
                     "source_url": article.get("source_url"),
                     "region": article.get("region"),
+                    "section": article.get("section", "Somalia"),
+                    "source_category": article.get("source_category"),
                     "language": article.get("language", "en"),
                     "published_at": article.get("published_at"),
                     "fetched_at": article.get("fetched_at", utc_now()),
@@ -835,56 +1063,10 @@ def persist_cluster_labels(df: pd.DataFrame) -> None:
         logger.warning("Could not persist cluster labels: %s", exc)
 
 
-def render_header() -> None:
-    ai_mode = "AI enabled" if Config.OPENAI_ENABLED and Config.OPENAI_API_KEY and not OPENAI_QUOTA_DISABLED else "Fallback mode"
-    st.markdown(
-        f"""
-        <div class="snl-hero">
-          <div class="snl-eyebrow">Multi-source news intelligence</div>
-          <div class="snl-title">{Config.APP_NAME}</div>
-          <div class="snl-subtitle">
-            Compare Somali and international coverage across sources, regions, framing signals, and story clusters.
-            Built for fast editorial review on Render's free tier.
-          </div>
-          <div style="margin-top:14px;">
-            {badge(ai_mode, "ok" if ai_mode == "AI enabled" else "warn")}
-            {badge("Postgres-ready", "ok")}
-            {badge(f"{len(Config.FEEDS)} monitored feeds", "source")}
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def render_sidebar() -> str:
-    with st.sidebar:
-        st.markdown("### Somali News Lens")
-        page = st.radio(
-            "Workspace",
-            ["Dashboard", "Ingest", "Analytics", "Account", "Operations"],
-            label_visibility="collapsed",
-        )
-        st.caption("Editorial comparison dashboard")
-        st.divider()
-
-        if session_active():
-            st.success(f"Signed in as {st.session_state['user']}")
-            if st.button("Sign out", use_container_width=True):
-                logout()
-                st.rerun()
-        else:
-            st.info("Sign in from Account to track activity.")
-
-        st.divider()
-        st.caption(f"Version {Config.VERSION}")
-        return page
-
-
 def metric_card(label: str, value: object, note: str = "") -> None:
     st.markdown(
         f"""
-        <div class="snl-card">
+        <div class="snl-card metric-card">
           <div class="snl-score">{html.escape(str(value))}</div>
           <div class="snl-score-label">{html.escape(label)}</div>
           <div class="snl-muted snl-small">{html.escape(note)}</div>
@@ -894,165 +1076,477 @@ def metric_card(label: str, value: object, note: str = "") -> None:
     )
 
 
-def render_story_card(row: pd.Series) -> None:
+def story_section(row: pd.Series) -> str:
+    section = row.get("section")
+    if section and str(section).strip():
+        return str(section)
+    region = str(row.get("region") or "").lower()
+    if region in {"somalia", "diaspora", "humanitarian"}:
+        return "Somalia"
+    return "World"
+
+
+def story_excerpt(row: pd.Series, limit: int = 220) -> str:
+    summary = clean_text(row.get("summary") or row.get("content") or "", limit)
+    if summary:
+        return summary
+    return "A developing story from the monitored source network."
+
+
+def story_time(row: pd.Series) -> str:
+    value = row.get("published_at") or row.get("fetched_at")
+    if not value:
+        return "Time unavailable"
+    try:
+        dt = pd.to_datetime(value).to_pydatetime().replace(tzinfo=None)
+        delta = utc_now() - dt
+        if delta.days > 0:
+            return f"{delta.days}d ago"
+        hours = int(delta.total_seconds() // 3600)
+        if hours > 0:
+            return f"{hours}h ago"
+        minutes = max(1, int(delta.total_seconds() // 60))
+        return f"{minutes}m ago"
+    except Exception:
+        return safe_date(value)
+
+
+def story_meta_html(row: pd.Series, show_framing: bool = True) -> str:
+    bias = row.get("bias") or "center"
     confidence = float(row.get("bias_confidence") or 0)
-    bias = row.get("bias") or "unknown"
-    title = html.escape(str(row.get("title") or "Untitled"))
-    summary = html.escape(clean_text(row.get("summary") or "No summary available.", 380))
-    source_url = row.get("source_url") or ""
-    link = f"<a href='{html.escape(source_url)}' target='_blank'>Read source</a>" if source_url else ""
+    parts = [
+        badge(row.get("source"), "source"),
+        badge(story_section(row), "region"),
+        badge(story_time(row), "neutral"),
+    ]
+    if show_framing:
+        parts.append(
+            f"<span class='snl-badge' style='background:#fff;color:{bias_color(bias)};border-color:{bias_color(bias)};'>"
+            f"{html.escape(str(bias))} | {confidence:.0%}</span>"
+        )
+    return "".join(parts)
+
+
+def story_link(row: pd.Series, label: str = "Read original") -> str:
+    url = row.get("source_url") or ""
+    if not url:
+        return ""
+    return f"<a class='story-link' href='{html.escape(str(url))}' target='_blank'>{html.escape(label)}</a>"
+
+
+def render_article_card(row: pd.Series, variant: str = "standard") -> None:
+    title = html.escape(str(row.get("title") or "Untitled story"))
+    excerpt_limit = 360 if variant == "hero" else 190
+    excerpt = html.escape(story_excerpt(row, excerpt_limit))
+    class_name = "article-card article-card-hero" if variant == "hero" else "article-card"
     st.markdown(
         f"""
-        <div class="snl-card">
-          <div>
-            {badge(row.get("source"), "source")}
-            {badge(row.get("region"), "region")}
-            <span class="snl-badge" style="background:#fff;color:{bias_color(bias)};border-color:{bias_color(bias)};">
-              {html.escape(str(bias))} · {confidence:.0%}
-            </span>
-          </div>
-          <div class="snl-card-title">{title}</div>
-          <div class="snl-muted">{summary}</div>
-          <div class="snl-muted snl-small" style="margin-top:10px;">{safe_date(row.get("published_at") or row.get("fetched_at"))} {link}</div>
+        <article class="{class_name}">
+          <div class="article-meta">{story_meta_html(row)}</div>
+          <h2>{title}</h2>
+          <p>{excerpt}</p>
+          <div class="article-footer">{story_link(row)}</div>
+        </article>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_compact_story(row: pd.Series) -> None:
+    title = html.escape(str(row.get("title") or "Untitled story"))
+    st.markdown(
+        f"""
+        <div class="compact-story">
+          <div class="compact-title">{title}</div>
+          <div class="compact-meta">{story_meta_html(row, show_framing=False)}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_cluster(cluster_df: pd.DataFrame) -> None:
+def empty_reader_state(title: str, message: str) -> None:
+    st.markdown(
+        f"""
+        <div class="reader-empty">
+          <div class="empty-title">{html.escape(title)}</div>
+          <div class="snl-muted">{html.escape(message)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def load_stories_for_reader(days: int = 14) -> pd.DataFrame:
+    try:
+        return load_recent_stories(days)
+    except Exception as exc:
+        logger.warning("Reader load failed: %s", exc)
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=Config.CACHE_TTL_SECONDS, show_spinner=False)
+def load_source_rollup(days: int = 30) -> pd.DataFrame:
+    query = text("""
+        SELECT source, COUNT(*) AS story_count, MAX(fetched_at) AS last_fetched
+        FROM stories
+        WHERE fetched_at >= :cutoff
+        GROUP BY source
+    """)
+    cutoff = utc_now() - timedelta(days=days)
+    with get_engine().begin() as conn:
+        return pd.read_sql(query, conn, params={"cutoff": cutoff})
+
+
+def clustered_stories(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+    out = assign_clusters(df)
+    persist_cluster_labels(out)
+    return out
+
+
+def cluster_summary(items: list[dict]) -> str:
+    if not items:
+        return "Coverage is still developing."
+    sources = ", ".join(sorted({str(item.get("source")) for item in items if item.get("source")})[:4])
+    first_summary = clean_text(items[0].get("summary") or items[0].get("title") or "", 240)
+    if first_summary:
+        return f"Common facts: {first_summary}"
+    return f"Common facts are being tracked across {sources}."
+
+
+def coverage_emphasis(text_value: str) -> str:
+    text_lower = text_value.lower()
+    signals = [
+        ("Security", {"security", "military", "attack", "al-shabaab", "police", "army"}),
+        ("Politics", {"president", "minister", "parliament", "election", "government"}),
+        ("Humanitarian", {"humanitarian", "aid", "displacement", "drought", "food", "un"}),
+        ("Economy", {"business", "economy", "trade", "port", "market", "investment"}),
+        ("Diplomacy", {"ethiopia", "kenya", "united nations", "turkey", "agreement", "talks"}),
+    ]
+    for label, keywords in signals:
+        if any(keyword in text_lower for keyword in keywords):
+            return label
+    return "General update"
+
+
+def render_comparison_card(cluster_df: pd.DataFrame, public: bool = True) -> None:
     items = cluster_df.to_dict(orient="records")
     first = cluster_df.iloc[0]
-    bias_counts = cluster_df["bias"].fillna("unknown").value_counts()
+    title = html.escape(str(first.get("title") or "Developing story"))
     source_count = cluster_df["source"].nunique()
     confidence = float(cluster_df["bias_confidence"].fillna(0).mean())
-    title = html.escape(str(first.get("title") or "Untitled story"))
+    heading = "Compare how sources covered this story" if public else "Coverage intelligence"
+    st.markdown(
+        f"""
+        <div class="compare-card">
+          <div class="section-kicker">{html.escape(heading)}</div>
+          <h3>{title}</h3>
+          <div class="article-meta">
+            {badge(f"{source_count} sources", "source")}
+            {badge(story_section(first), "region")}
+            {badge(f"avg confidence {confidence:.0%}", "neutral")}
+          </div>
+          <p>{html.escape(cluster_summary(items))}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    cols = st.columns(min(3, max(1, len(items))))
+    for idx, item in enumerate(items[:6]):
+        row = pd.Series(item)
+        emphasis = coverage_emphasis(f"{item.get('title', '')} {item.get('summary', '')}")
+        with cols[idx % len(cols)]:
+            st.markdown(
+                f"""
+                <div class="source-perspective">
+                  <div>{badge(item.get("source"), "source")}{badge(emphasis, "neutral")}</div>
+                  <div class="perspective-title">{html.escape(str(item.get("title") or "Untitled"))}</div>
+                  <p>{html.escape(story_excerpt(row, 150))}</p>
+                  {story_link(row, "Original story")}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    with st.container():
-        st.markdown(
-            f"""
-            <div class="snl-shell">
-              <div>{badge(f"{source_count} sources", "source")}{badge(first.get("region"), "region")}{badge(f"avg confidence {confidence:.0%}", "neutral")}</div>
-              <div class="snl-card-title" style="font-size:1.25rem;">{title}</div>
-              <div class="snl-muted">{html.escape(summarize_cluster_with_ai(items))}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        col_a, col_b = st.columns([2.2, 1])
-        with col_a:
-            for _, row in cluster_df.head(4).iterrows():
-                render_story_card(row)
-        with col_b:
-            st.markdown("**Framing mix**")
-            st.bar_chart(bias_counts, use_container_width=True)
-            st.markdown("**Source list**")
-            for source in cluster_df["source"].dropna().unique():
-                st.markdown(badge(source, "source"), unsafe_allow_html=True)
+
+def render_public_header() -> str:
+    st.markdown(
+        """
+        <div class="public-masthead">
+          <div>
+            <div class="brand-kicker">Somali and world coverage, compared</div>
+            <div class="public-brand">Somali News Lens</div>
+          </div>
+          <div class="masthead-note">Source-transparent news with reader-friendly coverage comparison.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    mode = st.radio(
+        "Product mode",
+        ["Reader Mode", "Editor / Insights Mode"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="product_mode",
+    )
+    return mode
 
 
-def dashboard_page() -> None:
-    st.markdown("## Top Stories")
-    col_filter, col_region = st.columns([1, 1])
-    with col_filter:
-        days = st.slider("Coverage window", 1, 30, 7, help="How many days of stored stories to review.")
-    with col_region:
-        region = st.selectbox("Region", ["All", "somalia", "international"])
+def render_reader_nav() -> str:
+    return st.radio(
+        "Reader navigation",
+        ["Home", "Latest", "Somalia", "World", "Compare Coverage", "About"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="reader_page",
+    )
 
-    try:
-        df = load_recent_stories(days)
-    except Exception as exc:
-        logger.warning("Could not load stories: %s", exc)
-        st.error("The story database is unavailable right now. Check DATABASE_URL and redeploy.")
-        return
 
-    if region != "All" and not df.empty:
-        df = df[df["region"] == region]
-
+def reader_home_page(df: pd.DataFrame) -> None:
+    st.markdown("<div class='section-kicker'>Today in focus</div>", unsafe_allow_html=True)
     if df.empty:
-        st.markdown(
-            """
-            <div class="snl-shell">
-              <div class="snl-card-title">No coverage yet</div>
-              <div class="snl-muted">Start with Ingest to fetch stories. The dashboard will group related coverage once enough articles are stored.</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        empty_reader_state(
+            "The newsroom is ready.",
+            "No stories are stored yet. Open Editor / Insights Mode and ingest feeds to publish the first reader view.",
         )
         return
 
-    clustered_df = assign_clusters(df)
-    persist_cluster_labels(clustered_df)
+    ordered = df.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last")
+    lead = ordered.iloc[0]
+    hero_col, rail_col = st.columns([1.8, 1])
+    with hero_col:
+        render_article_card(lead, "hero")
+    with rail_col:
+        st.markdown("<div class='rail-title'>Top stories</div>", unsafe_allow_html=True)
+        for _, row in ordered.iloc[1:5].iterrows():
+            render_compact_story(row)
 
+    st.markdown("<div class='section-heading'>Latest News</div>", unsafe_allow_html=True)
+    cols = st.columns(3)
+    for idx, (_, row) in enumerate(ordered.iloc[5:14].iterrows()):
+        with cols[idx % 3]:
+            render_article_card(row)
+
+    somalia = ordered[ordered["section"].fillna("Somalia").str.lower().isin(["somalia", "humanitarian"])]
+    st.markdown("<div class='section-heading'>Somalia</div>", unsafe_allow_html=True)
+    if somalia.empty:
+        empty_reader_state("Somalia coverage will appear here.", "Ingest feeds to populate national and regional stories.")
+    else:
+        cols = st.columns(2)
+        for idx, (_, row) in enumerate(somalia.head(6).iterrows()):
+            with cols[idx % 2]:
+                render_article_card(row)
+
+    world = ordered[ordered["section"].fillna("").str.lower().isin(["world", "africa"])]
+    st.markdown("<div class='section-heading'>World and Region</div>", unsafe_allow_html=True)
+    if world.empty:
+        empty_reader_state("International context is still loading.", "World and Horn of Africa stories will appear after ingestion.")
+    else:
+        cols = st.columns(2)
+        for idx, (_, row) in enumerate(world.head(4).iterrows()):
+            with cols[idx % 2]:
+                render_article_card(row)
+
+    st.markdown("<div class='section-heading'>Compare Coverage</div>", unsafe_allow_html=True)
+    render_reader_compare(df, limit=2)
+
+
+def reader_latest_page(df: pd.DataFrame) -> None:
+    st.markdown("<div class='section-heading'>Latest</div>", unsafe_allow_html=True)
+    if df.empty:
+        empty_reader_state("No latest stories yet.", "The latest feed fills after the editor ingests source updates.")
+        return
+    ordered = df.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last")
+    for _, row in ordered.head(30).iterrows():
+        render_article_card(row)
+
+
+def reader_section_page(df: pd.DataFrame, section_name: str) -> None:
+    st.markdown(f"<div class='section-heading'>{html.escape(section_name)}</div>", unsafe_allow_html=True)
+    if df.empty:
+        empty_reader_state(f"No {section_name.lower()} stories yet.", "Check back after the next feed update.")
+        return
+    target = section_name.lower()
+    if target == "world":
+        subset = df[df["section"].fillna("").str.lower().isin(["world", "africa"])]
+    else:
+        subset = df[df["section"].fillna("somalia").str.lower().isin(["somalia", "humanitarian"])]
+    if subset.empty:
+        empty_reader_state(f"No {section_name.lower()} stories yet.", "This section will populate as matching sources publish updates.")
+        return
+    cols = st.columns(3)
+    for idx, (_, row) in enumerate(subset.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last").head(24).iterrows()):
+        with cols[idx % 3]:
+            render_article_card(row)
+
+
+def render_reader_compare(df: pd.DataFrame, limit: int = 6) -> None:
+    if df.empty:
+        empty_reader_state("Comparison cards need more coverage.", "Once multiple sources cover the same story, comparisons will appear here.")
+        return
+    clustered = clustered_stories(df)
+    if clustered.empty or "cluster_label" not in clustered.columns:
+        empty_reader_state("No comparable story groups yet.", "Ingest more sources to build overlap across coverage.")
+        return
+    clusters = [
+        cluster.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last")
+        for _, cluster in clustered[clustered["cluster_label"] != -1].groupby("cluster_label")
+        if len(cluster) >= 2
+    ]
+    if not clusters:
+        empty_reader_state("No comparable story groups yet.", "The system needs at least two related stories before it can compare coverage.")
+        return
+    for cluster in clusters[:limit]:
+        render_comparison_card(cluster, public=True)
+
+
+def reader_about_page() -> None:
+    st.markdown(
+        """
+        <div class="about-panel">
+          <div class="section-kicker">About this project</div>
+          <h2>Somali News Lens helps readers see the story and the coverage around it.</h2>
+          <p>
+            The site gathers public RSS feeds from Somali, regional, humanitarian, and international publishers.
+            Reader Mode presents a clean news experience. Compare Coverage adds transparency by showing which
+            sources reported similar stories and how their framing signals differ.
+          </p>
+          <p>
+            Framing labels are assistive signals, not final judgments. They can be generated by OpenAI when configured
+            or by a simple local fallback when the app is running without an API key.
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_reader_mode(db_ready: bool) -> None:
+    reader_page = render_reader_nav()
+    if not db_ready:
+        empty_reader_state("Coverage is temporarily unavailable.", "The database is not reachable. No secrets or internal diagnostics are shown here.")
+        return
+    df = load_stories_for_reader(30)
+    if reader_page == "Home":
+        reader_home_page(df)
+    elif reader_page == "Latest":
+        reader_latest_page(df)
+    elif reader_page == "Somalia":
+        reader_section_page(df, "Somalia")
+    elif reader_page == "World":
+        reader_section_page(df, "World")
+    elif reader_page == "Compare Coverage":
+        st.markdown("<div class='section-heading'>Compare Coverage</div>", unsafe_allow_html=True)
+        st.markdown("<p class='reader-intro'>See how multiple sources covered the same developing story.</p>", unsafe_allow_html=True)
+        render_reader_compare(df, limit=10)
+    else:
+        reader_about_page()
+
+    st.markdown(
+        """
+        <footer class="public-footer">
+          <div>Somali News Lens</div>
+          <div>Source-transparent coverage. Reader view for the public, Insights view for newsroom operations.</div>
+        </footer>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def insights_sidebar() -> str:
+    with st.sidebar:
+        st.markdown("### Insights Mode")
+        page = st.radio(
+            "Workspace",
+            ["Dashboard", "Ingest", "Coverage Intelligence", "Analytics", "Sources", "Operations", "Account"],
+            label_visibility="collapsed",
+        )
+        st.caption("Internal newsroom intelligence")
+        st.divider()
+        if session_active():
+            st.success(f"Signed in as {st.session_state['user']}")
+            if st.button("Sign out", use_container_width=True):
+                logout()
+                st.rerun()
+        else:
+            st.warning("Sign in to use ingestion and operations controls.")
+        st.divider()
+        st.caption(f"Version {Config.VERSION}")
+        return page
+
+
+def require_editor() -> bool:
+    if session_active():
+        return True
+    st.warning("Sign in from Account to use this editor control.")
+    return False
+
+
+def insights_dashboard_page(df: pd.DataFrame) -> None:
+    st.markdown("## Newsroom Dashboard")
+    if df.empty:
+        empty_reader_state("No stored coverage yet.", "Run Ingest to fetch stories from the expanded source network.")
+        return
+    clustered = clustered_stories(df)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        metric_card("Stories", len(clustered_df), "Stored in current window")
+        metric_card("Stories", int(df["id"].count()), "Stored in the last 30 days")
     with c2:
-        metric_card("Sources", clustered_df["source"].nunique(), "Distinct publishers")
+        metric_card("Sources", int(df["source"].nunique()), "Publishing sources represented")
     with c3:
-        metric_card("Regions", clustered_df["region"].nunique(), "Coverage areas")
+        metric_card("Somalia share", f"{(df['section'].fillna('').str.lower().isin(['somalia', 'humanitarian']).mean() * 100):.0f}%", "Reader-facing priority")
     with c4:
-        metric_card("Clustered", int((clustered_df["cluster_label"] != -1).sum()), "Stories in story groups")
+        metric_card("Clustered", int((clustered["cluster_label"] != -1).sum()), "Stories with comparison potential")
 
-    clusters = clustered_df[clustered_df["cluster_label"] != -1]
-    singles = clustered_df[clustered_df["cluster_label"] == -1]
-
-    st.markdown("### Multi-source comparisons")
-    rendered = False
-    for _, cluster in clusters.groupby("cluster_label"):
-        if len(cluster) >= 2:
-            rendered = True
-            render_cluster(cluster.sort_values(by="published_at", ascending=False, na_position="last"))
-
-    if not rendered:
-        st.info("No multi-source clusters yet. Ingest more feeds or widen the coverage window.")
-
-    if not singles.empty:
-        st.markdown("### Additional single-source stories")
-        cols = st.columns(2)
-        for idx, (_, row) in enumerate(singles.head(8).iterrows()):
-            with cols[idx % 2]:
-                render_story_card(row)
+    st.markdown("### Recently stored stories")
+    for _, row in df.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last").head(8).iterrows():
+        render_article_card(row)
 
 
-def ingest_page() -> None:
-    st.markdown("## Ingest News")
+def insights_ingest_page() -> None:
+    st.markdown("## Ingest")
     st.markdown(
         """
         <div class="snl-shell">
-          <div class="snl-card-title">Fetch, classify, deduplicate</div>
-          <div class="snl-muted">Pulls configured RSS feeds, applies OpenAI classification when available, and falls back automatically when the key is missing or quota-limited.</div>
+          <div class="snl-card-title">Refresh monitored feeds</div>
+          <div class="snl-muted">Fetches the expanded Somali, regional, humanitarian, and international source list. Each feed is isolated so failures are reported without stopping the run.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
     col_a, col_b, col_c = st.columns(3)
     with col_a:
-        metric_card("Configured feeds", len(Config.FEEDS), "RSS sources")
+        metric_card("Sources in run", len(Config.FEEDS), "Capped for Render free tier")
     with col_b:
-        ai_state = "OpenAI" if Config.OPENAI_ENABLED and Config.OPENAI_API_KEY else "Fallback"
-        metric_card("Classification", ai_state, "Current mode")
+        metric_card("Per-feed cap", Config.MAX_ARTICLES_PER_FEED, "Articles per source")
     with col_c:
-        metric_card("Max per feed", Config.MAX_ARTICLES_PER_FEED, "Free-tier friendly")
+        metric_card("Concurrency", Config.FEED_CONCURRENCY, "Parallel fetch limit")
+
+    if not require_editor():
+        return
 
     if st.button("Fetch latest coverage", type="primary", use_container_width=True):
-        with st.spinner("Fetching feeds..."):
-            raw_articles, warnings = fetch_all_feeds()
+        with st.spinner("Checking feeds and collecting stories..."):
+            raw_articles, statuses = fetch_all_feeds()
+        st.session_state["source_status"] = {status["name"]: status for status in statuses}
 
-        for warning in warnings:
-            st.warning(f"Feed warning: {warning}")
+        healthy = sum(1 for status in statuses if status["status"] == "healthy")
+        failed = sum(1 for status in statuses if status["status"] == "failed")
+        st.info(f"{healthy} feeds returned stories. {failed} feeds need attention.")
 
         if not raw_articles:
-            st.error("No articles were fetched. Try again later or check feed availability.")
+            st.error("No articles were fetched. Review the Sources page for feed status.")
             return
 
-        with st.spinner("Classifying and preparing stories..."):
+        with st.spinner("Classifying framing and preparing deduplicated records..."):
             enriched, stats = enrich_articles(raw_articles)
 
         try:
             inserted = insert_articles(enriched)
             load_recent_stories.clear()
+            load_source_rollup.clear()
         except Exception as exc:
             logger.exception("Insert failed")
             st.error("Stories were fetched but could not be saved. Check DATABASE_URL and database permissions.")
@@ -1060,32 +1554,25 @@ def ingest_page() -> None:
             return
 
         st.success(f"Fetched {len(enriched)} articles and inserted {inserted} new stories.")
-        if stats.get("fallback", 0):
-            st.info(f"{stats.get('fallback', 0)} stories used fallback classification.")
-        if stats.get("openai", 0):
-            st.info(f"{stats.get('openai', 0)} stories used OpenAI classification.")
-
-        preview_cols = ["title", "source", "region", "bias", "bias_confidence"]
-        st.dataframe(pd.DataFrame(enriched)[preview_cols].head(30), use_container_width=True)
-
-        if st.session_state.get("user"):
-            log_activity(st.session_state["user"], "ingest_news")
+        st.caption(f"Classification: {stats.get('openai', 0)} OpenAI, {stats.get('fallback', 0)} fallback.")
+        preview_cols = ["title", "source", "section", "region", "bias", "bias_confidence"]
+        st.dataframe(pd.DataFrame(enriched)[preview_cols].head(50), use_container_width=True)
+        log_activity(st.session_state.get("user"), "ingest_news")
 
 
-def analytics_page() -> None:
+def coverage_intelligence_page(df: pd.DataFrame) -> None:
+    st.markdown("## Coverage Intelligence")
+    st.markdown("<p class='reader-intro'>Review overlapping stories, common facts, source perspectives, and framing signals.</p>", unsafe_allow_html=True)
+    render_reader_compare(df, limit=12)
+
+
+def analytics_page(df: pd.DataFrame) -> None:
     st.markdown("## Analytics")
-    try:
-        df = load_recent_stories(30)
-    except Exception as exc:
-        logger.warning("Analytics load failed: %s", exc)
-        st.error("Analytics are unavailable until the database is reachable.")
-        return
-
     if df.empty:
-        st.info("No analytics yet. Ingest news to populate charts.")
+        empty_reader_state("No analytics yet.", "Ingest news to populate source, section, and framing charts.")
         return
 
-    clustered = assign_clusters(df)
+    clustered = clustered_stories(df)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.metric("Stories", int(df["id"].count()))
@@ -1099,29 +1586,62 @@ def analytics_page() -> None:
     col1, col2 = st.columns(2)
     with col1:
         bias_df = df["bias"].fillna("unknown").value_counts().reset_index()
-        bias_df.columns = ["bias", "count"]
-        fig = px.bar(bias_df, x="bias", y="count", title="Framing distribution", color="bias")
+        bias_df.columns = ["framing", "count"]
+        fig = px.bar(bias_df, x="framing", y="count", title="Framing distribution", color="framing")
         fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=50, b=20))
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        source_df = (
-            df.groupby("source", as_index=False)
-            .agg(count=("id", "count"), avg_confidence=("bias_confidence", "mean"))
-            .sort_values("count", ascending=False)
-            .head(10)
-        )
-        fig = px.bar(source_df, x="source", y="count", color="avg_confidence", title="Most active sources")
-        fig.update_layout(margin=dict(l=20, r=20, t=50, b=20))
+        section_df = df["section"].fillna("Unsectioned").value_counts().reset_index()
+        section_df.columns = ["section", "count"]
+        fig = px.bar(section_df, x="section", y="count", title="Section mix", color="section")
+        fig.update_layout(showlegend=False, margin=dict(l=20, r=20, t=50, b=20))
         st.plotly_chart(fig, use_container_width=True)
 
-    series = df.copy()
-    series["date"] = pd.to_datetime(series["fetched_at"], errors="coerce").dt.date
-    times = series.dropna(subset=["date"]).groupby(["date", "bias"], as_index=False).size().rename(columns={"size": "count"})
-    if not times.empty:
-        fig = px.line(times, x="date", y="count", color="bias", title="Coverage volume by framing")
-        fig.update_layout(margin=dict(l=20, r=20, t=50, b=20))
-        st.plotly_chart(fig, use_container_width=True)
+    source_df = (
+        df.groupby("source", as_index=False)
+        .agg(count=("id", "count"), avg_confidence=("bias_confidence", "mean"))
+        .sort_values("count", ascending=False)
+        .head(15)
+    )
+    fig = px.bar(source_df, x="source", y="count", color="avg_confidence", title="Source activity")
+    fig.update_layout(margin=dict(l=20, r=20, t=50, b=20))
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def sources_page() -> None:
+    st.markdown("## Sources")
+    st.markdown("<p class='reader-intro'>Monitor feed coverage, recent ingest results, and source diversity.</p>", unsafe_allow_html=True)
+    try:
+        rollup = load_source_rollup(30)
+    except Exception as exc:
+        logger.warning("Source rollup failed: %s", exc)
+        rollup = pd.DataFrame(columns=["source", "story_count", "last_fetched"])
+
+    rollup_map = {}
+    if not rollup.empty:
+        rollup_map = rollup.set_index("source").to_dict(orient="index")
+    status_map = st.session_state.get("source_status", {})
+    rows = []
+    for source in Config.FEEDS:
+        stored = rollup_map.get(source["name"], {})
+        status = status_map.get(source["name"], {})
+        rows.append(
+            {
+                "source": source["name"],
+                "section": source.get("section"),
+                "category": source.get("category"),
+                "language": source.get("language"),
+                "status": status.get("status", "not checked"),
+                "items_last_run": status.get("item_count", 0),
+                "stored_30d": int(stored.get("story_count", 0) or 0),
+                "last_fetched": stored.get("last_fetched", ""),
+                "error": status.get("error", ""),
+                "feed_url": source.get("url"),
+            }
+        )
+    source_df = pd.DataFrame(rows)
+    st.dataframe(source_df, use_container_width=True, hide_index=True)
 
 
 def account_page() -> None:
@@ -1149,18 +1669,21 @@ def account_page() -> None:
                         st.error(msg)
 
     with right:
-        st.markdown("### Create account")
+        st.markdown("### Create editor account")
         with st.form("register_form"):
             new_user = st.text_input("Username", help="3-32 characters. Letters, numbers, dots, dashes, and underscores.")
             new_email = st.text_input("Email optional")
             new_password = st.text_input("Password", type="password")
             confirm = st.text_input("Confirm password", type="password")
+            invite_code = ""
+            if Config.EDITOR_INVITE_CODE:
+                invite_code = st.text_input("Editor invite code", type="password")
             create = st.form_submit_button("Create account", use_container_width=True)
             if create:
                 if new_password != confirm:
                     st.error("Passwords do not match.")
                 else:
-                    ok, msg = register_user(new_user, new_password, new_email)
+                    ok, msg = register_user(new_user, new_password, new_email, invite_code)
                     if ok:
                         st.success(msg)
                     else:
@@ -1172,23 +1695,22 @@ def operations_page(db_label: str) -> None:
     st.markdown(
         """
         <div class="snl-shell">
-          <div class="snl-card-title">Deployment readiness</div>
-          <div class="snl-muted">No secrets are displayed here. Use Render environment variables for credentials and database URLs.</div>
+          <div class="snl-card-title">Deployment and maintenance</div>
+          <div class="snl-muted">Operational controls are separated from Reader Mode. Secrets and raw connection strings are never displayed.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
     c1, c2, c3 = st.columns(3)
     with c1:
         metric_card("Database", db_label, "Current SQL dialect")
     with c2:
-        metric_card("OpenAI key", "set" if bool(Config.OPENAI_API_KEY) else "missing", "Fallback works without it")
+        metric_card("OpenAI", "enabled" if Config.OPENAI_ENABLED and Config.OPENAI_API_KEY else "fallback", "Reader pages do not call OpenAI")
     with c3:
         metric_card("Runtime", "Python 3.11", "Pinned for Render")
 
-    with st.expander("Configured feeds"):
-        st.dataframe(pd.DataFrame(Config.FEEDS), use_container_width=True)
+    if not require_editor():
+        return
 
     st.markdown("### Maintenance")
     if st.button("Delete stories older than 30 days"):
@@ -1197,34 +1719,66 @@ def operations_page(db_label: str) -> None:
             with get_engine().begin() as conn:
                 result = conn.execute(text("DELETE FROM stories WHERE fetched_at < :cutoff"), {"cutoff": cutoff})
             load_recent_stories.clear()
+            load_source_rollup.clear()
             st.success(f"Deleted {result.rowcount or 0} old rows.")
         except Exception as exc:
             logger.warning("Maintenance cleanup failed: %s", exc)
             st.error("Cleanup failed. Check database connectivity.")
 
 
-def main() -> None:
-    inject_css()
-    init_session_state()
-    ready, db_label = database_ready()
-    render_header()
-
-    if not ready:
+def render_insights_mode(db_ready: bool, db_label: str) -> None:
+    st.markdown(
+        """
+        <div class="insights-header">
+          <div class="section-kicker">Editor / Insights Mode</div>
+          <h1>Newsroom intelligence workspace</h1>
+          <p>Monitor source health, refresh coverage, compare framing, and review analytics without exposing operations to public readers.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if not db_ready:
         st.error(db_label)
         st.info("Check DATABASE_URL in Render. The app did not expose secrets or stack traces.")
         return
-
-    page = render_sidebar()
-    if page == "Dashboard":
-        dashboard_page()
-    elif page == "Ingest":
-        ingest_page()
-    elif page == "Analytics":
-        analytics_page()
-    elif page == "Account":
+    page = insights_sidebar()
+    if page != "Account" and not session_active():
+        st.warning("Insights Mode is for editor workflows. Sign in or create an editor account to continue.")
         account_page()
-    else:
+        return
+    try:
+        df = load_recent_stories(30)
+    except Exception as exc:
+        logger.warning("Insights load failed: %s", exc)
+        df = pd.DataFrame()
+
+    if page == "Dashboard":
+        insights_dashboard_page(df)
+    elif page == "Ingest":
+        insights_ingest_page()
+    elif page == "Coverage Intelligence":
+        coverage_intelligence_page(df)
+    elif page == "Analytics":
+        analytics_page(df)
+    elif page == "Sources":
+        sources_page()
+    elif page == "Operations":
         operations_page(db_label)
+    else:
+        account_page()
+
+
+def main() -> None:
+    init_session_state()
+    mode = st.session_state.get("product_mode", "Reader Mode")
+    inject_css(mode)
+    selected_mode = render_public_header()
+    ready, db_label = database_ready()
+
+    if selected_mode == "Reader Mode":
+        render_reader_mode(ready)
+    else:
+        render_insights_mode(ready, db_label)
 
     st.caption(f"{Config.APP_NAME} v{Config.VERSION}")
 

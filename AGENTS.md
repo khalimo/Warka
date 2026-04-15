@@ -1,12 +1,10 @@
 # AGENTS.md
 
 ## Project
-Somali News Lens is a Streamlit app that:
-- ingests RSS feeds
-- classifies framing/bias with OpenAI
-- clusters related stories
-- supports login/registration
-- shows analytics
+Somali News Lens is a dual-mode Streamlit news product:
+- Reader Mode is a public-facing Somali news website
+- Editor / Insights Mode is an internal newsroom intelligence dashboard
+- The app ingests RSS feeds, classifies framing, clusters related stories, compares coverage, supports login/registration, and shows analytics/source health
 
 ## Run
 pip install -r requirements.txt
@@ -22,12 +20,14 @@ DATABASE_URL
 - Keep deployment compatible with Render.
 - Prefer production-safe fixes over hacks.
 - Use PostgreSQL in deployment through DATABASE_URL.
+- Keep public Reader Mode separate from internal operations.
 
 ## Validate
-- Home loads.
-- Ingest News fetches and stores stories.
+- Reader Mode home/latest/section/compare pages load.
+- Insights Mode dashboard, ingest, sources, analytics, operations, and account pages load.
+- Ingest fetches and stores stories.
 - Duplicate insert protection works.
 - Bias classification returns labels.
 - Clustering works.
 - Login and registration work.
-- Analytics renders.
+- Source health is visible after ingest.

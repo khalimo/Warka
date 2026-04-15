@@ -1,20 +1,68 @@
 # Somali News Lens
 
-Somali News Lens is a Streamlit dashboard for ingesting RSS news, comparing multi-source coverage, classifying editorial framing, clustering related stories, and reviewing source/region analytics.
+Somali News Lens is a dual-mode Streamlit product for Somali and international news coverage.
 
-The app is designed as a production-ready MVP for Render free-tier testing. It uses Postgres on Render, SQLite for local development, and falls back gracefully when OpenAI is not configured or quota-limited.
+- Reader Mode is a public-facing news website for visitors.
+- Editor / Insights Mode is an internal newsroom workspace for feed monitoring, ingestion, comparison, analytics, and operations.
 
-## What It Does
+The app is built for Render free-tier testing with a simple Python web service and Postgres database. It also supports local SQLite development.
 
-- Ingests configured RSS feeds
-- Deduplicates stories by normalized title, URL, and source
-- Classifies framing with OpenAI when available
-- Uses local fallback classification when OpenAI is missing or unavailable
-- Clusters related stories with TF-IDF and DBSCAN
-- Shows multi-source comparison cards
-- Provides analytics for source activity, framing mix, and coverage volume
-- Supports login and registration with bcrypt password hashing
-- Keeps secrets out of the repo
+## Product Modes
+
+### Reader Mode
+
+Reader Mode is the public news experience:
+
+- publication-style homepage
+- lead story and top-story hierarchy
+- latest news feed
+- Somalia section
+- World and regional context
+- reader-friendly Compare Coverage cards
+- source, section, time, and framing labels
+- graceful sparse-data states
+
+### Editor / Insights Mode
+
+Editor / Insights Mode is the internal workflow:
+
+- newsroom dashboard
+- feed ingestion
+- coverage intelligence
+- analytics
+- source health monitoring
+- operations and maintenance
+- account/login flow
+
+Operational controls are separated from the public reader experience.
+Insights Mode requires sign-in before dashboard, ingestion, source health, analytics, or operations pages are shown.
+
+## Source Coverage
+
+The source catalog lives in `sources.py`. It includes Somali national, regional Somali, diaspora, humanitarian, Africa-region, and international feeds.
+
+Current configured sources include:
+
+- Hiiraan Online
+- SONNA English
+- Shabelle Media
+- Goobjoog English
+- Caasimada Online
+- Jowhar
+- Puntland Post
+- Horseed Media
+- Somali Guardian
+- Somali Dispatch
+- The Somali Digest
+- Wardheer News
+- AllAfrica Somalia
+- ReliefWeb Somalia
+- The Guardian Somalia
+- New York Times Somalia
+- BBC World
+- Al Jazeera
+
+Feed failures are isolated per source. A broken source should report as failed in Insights Mode without crashing the app.
 
 ## Local Setup
 
@@ -33,19 +81,19 @@ Open:
 http://localhost:8501
 ```
 
-OpenAI is optional. If `OPENAI_API_KEY` is not set, the app still works with fallback classification.
+OpenAI is optional. If `OPENAI_API_KEY` is missing or quota-limited, ingestion continues with local fallback classification.
 
 ## Render Deployment
 
-The repo includes `render.yaml`, so Render can create:
+Use a Render Web Service, not a Static Site.
+
+The included `render.yaml` can create:
 
 - a Python web service
 - a free Postgres database
 - a `DATABASE_URL` environment variable wired from that database
 
-### Render Settings
-
-Use these settings if entering them manually:
+Manual Render settings:
 
 ```text
 Service type: Web Service
@@ -55,9 +103,7 @@ Start Command: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
 Health Check Path: /_stcore/health
 ```
 
-Do not create a Static Site. Streamlit must run as a Web Service.
-
-### Environment Variables
+## Environment Variables
 
 Required on Render:
 
@@ -65,24 +111,25 @@ Required on Render:
 DATABASE_URL
 ```
 
-If using the included blueprint, Render sets `DATABASE_URL` from the Postgres database automatically.
-
 Optional:
 
 ```text
 OPENAI_API_KEY
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_ENABLED=true
+MAX_FEEDS_PER_RUN=18
 MAX_ARTICLES_PER_FEED=12
+FEED_CONCURRENCY=6
 MAX_AI_CLASSIFICATIONS_PER_RUN=8
 SESSION_TIMEOUT_MINUTES=45
+EDITOR_INVITE_CODE=
 ```
 
-If your OpenAI key has no quota, the app will detect the failure and continue with fallback classification.
+Set `EDITOR_INVITE_CODE` if you want new editor accounts to require a private invite code.
 
 ## Validation
 
-Run a quick local smoke test:
+Run the local smoke test:
 
 ```bash
 python smoke_test.py
@@ -90,25 +137,29 @@ python smoke_test.py
 
 The smoke test checks:
 
-- database initialization
+- database initialization and lightweight migrations
 - duplicate insert protection
+- new story section/source fields
+- source rollups
 - fallback classification
 - clustering path
-- registration
-- login
+- registration and login
+- expanded source catalog presence
 
 ## Operational Notes
 
-- Render free services may sleep after inactivity.
-- The first request after sleep can be slow.
-- Free Postgres is suitable for testing, not production retention guarantees.
-- RSS feeds can temporarily fail or return malformed entries; the app reports feed warnings without crashing.
-- OpenAI failures are isolated so ingestion can continue.
+- Render free web services may sleep after inactivity.
+- First load after sleep can be slow.
+- Free Postgres is suitable for MVP testing, not production-grade retention.
+- RSS feeds can fail, throttle, or change format; source failures are isolated and visible in Insights Mode.
+- Reader Mode does not call OpenAI during page rendering.
+- Ingestion caps feeds and article volume to stay free-tier friendly.
 
-## Files
+## Key Files
 
 ```text
 app.py                Main Streamlit application
+sources.py            Source catalog and metadata
 render.yaml           Render web service and Postgres blueprint
 runtime.txt           Python runtime pin for Render
 requirements.txt      Python dependencies
