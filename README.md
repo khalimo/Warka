@@ -1,61 +1,119 @@
 # Somali News Lens
 
-A Streamlit app for ingesting and analyzing news coverage across multiple sources.
+Somali News Lens is a Streamlit dashboard for ingesting RSS news, comparing multi-source coverage, classifying editorial framing, clustering related stories, and reviewing source/region analytics.
 
-## Features
-- RSS news ingestion
-- AI-assisted framing/bias classification
-- Story clustering with TF-IDF and DBSCAN
-- Login and registration
-- Analytics dashboard
-- Duplicate article protection
-- Render-ready deployment
+The app is designed as a production-ready MVP for Render free-tier testing. It uses Postgres on Render, SQLite for local development, and falls back gracefully when OpenAI is not configured or quota-limited.
 
-## Local run
+## What It Does
+
+- Ingests configured RSS feeds
+- Deduplicates stories by normalized title, URL, and source
+- Classifies framing with OpenAI when available
+- Uses local fallback classification when OpenAI is missing or unavailable
+- Clusters related stories with TF-IDF and DBSCAN
+- Shows multi-source comparison cards
+- Provides analytics for source activity, framing mix, and coverage volume
+- Supports login and registration with bcrypt password hashing
+- Keeps secrets out of the repo
+
+## Local Setup
 
 ```bash
+python3 -m venv .venv
+. .venv/bin/activate
 pip install -r requirements.txt
-export OPENAI_API_KEY=your_key_here
+cp .env.example .env
 export DATABASE_URL=sqlite:///news.db
-streamlit run app.py
+streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 ```
 
-If `OPENAI_API_KEY` is not set, the app uses a local fallback classifier so the core UI can still be tested.
-
-## Render
-
-Set these environment variables in Render:
-
-- `OPENAI_API_KEY`
-- `DATABASE_URL`
-
-The included `render.yaml` starts Streamlit with:
-
-```bash
-streamlit run app.py --server.port $PORT --server.address 0.0.0.0
-```
-
-## Codex validation prompt
+Open:
 
 ```text
-Review, improve, deploy, and test this Streamlit app.
+http://localhost:8501
+```
 
-Tasks:
-1. Install dependencies and run the app.
-2. Fix all runtime errors.
-3. Verify OpenAI integration works with the current SDK.
-4. Verify Render deployment config is correct.
-5. Deploy to Render.
-6. Test:
-   - Home page
-   - Ingest News
-   - DB insert path
-   - bias classification
-   - clustering
-   - registration/login
-   - analytics
-7. Fix any failures and redeploy.
-8. Return the live URL, change summary, and remaining risks.
+OpenAI is optional. If `OPENAI_API_KEY` is not set, the app still works with fallback classification.
 
-Read AGENTS.md first and use it as the repo instruction file.
+## Render Deployment
+
+The repo includes `render.yaml`, so Render can create:
+
+- a Python web service
+- a free Postgres database
+- a `DATABASE_URL` environment variable wired from that database
+
+### Render Settings
+
+Use these settings if entering them manually:
+
+```text
+Service type: Web Service
+Branch: main
+Build Command: pip install -r requirements.txt
+Start Command: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+Health Check Path: /_stcore/health
+```
+
+Do not create a Static Site. Streamlit must run as a Web Service.
+
+### Environment Variables
+
+Required on Render:
+
+```text
+DATABASE_URL
+```
+
+If using the included blueprint, Render sets `DATABASE_URL` from the Postgres database automatically.
+
+Optional:
+
+```text
+OPENAI_API_KEY
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_ENABLED=true
+MAX_ARTICLES_PER_FEED=12
+MAX_AI_CLASSIFICATIONS_PER_RUN=8
+SESSION_TIMEOUT_MINUTES=45
+```
+
+If your OpenAI key has no quota, the app will detect the failure and continue with fallback classification.
+
+## Validation
+
+Run a quick local smoke test:
+
+```bash
+python smoke_test.py
+```
+
+The smoke test checks:
+
+- database initialization
+- duplicate insert protection
+- fallback classification
+- clustering path
+- registration
+- login
+
+## Operational Notes
+
+- Render free services may sleep after inactivity.
+- The first request after sleep can be slow.
+- Free Postgres is suitable for testing, not production retention guarantees.
+- RSS feeds can temporarily fail or return malformed entries; the app reports feed warnings without crashing.
+- OpenAI failures are isolated so ingestion can continue.
+
+## Files
+
+```text
+app.py                Main Streamlit application
+render.yaml           Render web service and Postgres blueprint
+runtime.txt           Python runtime pin for Render
+requirements.txt      Python dependencies
+.env.example          Local environment template
+smoke_test.py         Lightweight validation script
+AGENTS.md             Codex repo instructions
+IMPLEMENT.md          Implementation runbook
 ```

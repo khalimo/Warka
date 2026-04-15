@@ -6,3 +6,4 @@ logs/
 __pycache__/
 *.pyc
 news.db
+smoke_test.db
