@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: somali-news-lens
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: somali-news-db
+          property: connectionString
+
+databases:
+  - name: somali-news-db
+    plan: free

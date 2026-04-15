@@ -1,0 +1,8 @@
+.env
+.venv/
+.streamlit/
+data/
+logs/
+__pycache__/
+*.pyc
+news.db
