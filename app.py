@@ -72,7 +72,6 @@ logger = logging.getLogger("somali-news-lens")
 
 st.set_page_config(
     page_title=Config.APP_NAME,
-    page_icon="SNL",
     layout="wide",
     initial_sidebar_state="expanded",
 )
