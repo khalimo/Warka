@@ -1,6 +1,6 @@
 # Somali News Lens
 
-Somali News Lens is a dual-mode Streamlit product for Somali and international news coverage.
+Somali News Lens is a dual-mode Streamlit product for Somali and international news coverage: a public news front page with built-in source comparison, plus a private newsroom intelligence workspace.
 
 - Reader Mode is a public-facing news website for visitors.
 - Editor / Insights Mode is an internal newsroom workspace for feed monitoring, ingestion, comparison, analytics, and operations.
@@ -15,11 +15,12 @@ Reader Mode is the public news experience:
 
 - publication-style homepage
 - lead story and top-story hierarchy
-- latest news feed
+- deeper latest news stream with search
 - Somalia section
 - World and regional context
 - reader-friendly Compare Coverage cards
 - source, section, time, and framing labels
+- feed image support when publishers provide media
 - graceful sparse-data states
 
 ### Editor / Insights Mode
@@ -39,7 +40,7 @@ Insights Mode requires sign-in before dashboard, ingestion, source health, analy
 
 ## Source Coverage
 
-The source catalog lives in `sources.py`. It includes Somali national, regional Somali, Somaliland, diaspora, humanitarian, Africa-region, Somali-language international, and global feeds. The default Render config ingests the full configured catalog while keeping per-feed article caps and concurrency low enough for free-tier testing.
+The source catalog lives in `sources.py`. It includes Somali national, regional Somali, Somaliland, diaspora, humanitarian, Africa-region, Somali-language international, and global feeds. The default Render config ingests the full configured catalog while keeping concurrency low enough for free-tier testing.
 
 Current configured sources include:
 
@@ -62,17 +63,23 @@ Current configured sources include:
 - Somali Dispatch
 - The Somali Digest
 - Idil News
+- Mudug24
 - Goobjooge
+- AllSanaag
 - Wardheer News
 - Radio Ergo
 - Somaliland Chronicle
 - Berbera News
 - Wargeyska Dawan
+- Oodweyne Media
+- Saxafi Media
 - AllAfrica Somalia
 - ReliefWeb Somalia
 - The Guardian Somalia
 - New York Times Somalia
+- New York Times Africa
 - BBC World
+- BBC Africa
 - Al Jazeera
 
 Feed failures are isolated per source. A broken source should report as failed in Insights Mode without crashing the app.
@@ -130,10 +137,13 @@ Optional:
 OPENAI_API_KEY
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_ENABLED=true
-MAX_FEEDS_PER_RUN=31
-MAX_ARTICLES_PER_FEED=12
+MAX_FEEDS_PER_RUN=37
+MAX_ARTICLES_PER_FEED=16
 FEED_CONCURRENCY=6
 MAX_AI_CLASSIFICATIONS_PER_RUN=8
+READER_LOOKBACK_DAYS=60
+READER_LATEST_LIMIT=90
+READER_SECTION_LIMIT=72
 SESSION_TIMEOUT_MINUTES=45
 EDITOR_INVITE_CODE=
 ```
@@ -166,7 +176,7 @@ The smoke test checks:
 - Free Postgres is suitable for MVP testing, not production-grade retention.
 - RSS feeds can fail, throttle, or change format; source failures are isolated and visible in Insights Mode.
 - Reader Mode does not call OpenAI during page rendering.
-- Ingestion caps feeds and article volume to stay free-tier friendly.
+- Ingestion caps feeds and article volume to stay free-tier friendly, but Reader Mode can show a much deeper latest and section archive than the homepage.
 
 ## Key Files
 

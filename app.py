@@ -62,7 +62,7 @@ def normalize_database_url(url: str) -> str:
 
 class Config:
     APP_NAME = "Somali News Lens"
-    VERSION = "4.0.0"
+    VERSION = "4.1.0"
 
     DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///news.db"))
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -75,11 +75,14 @@ class Config:
     LOCKOUT_MINUTES = env_int("LOCKOUT_MINUTES", 15, 1)
 
     CACHE_TTL_SECONDS = env_int("CACHE_TTL_SECONDS", 300, 30)
-    MAX_ARTICLES_PER_FEED = env_int("MAX_ARTICLES_PER_FEED", 12, 1)
+    MAX_ARTICLES_PER_FEED = env_int("MAX_ARTICLES_PER_FEED", 16, 1)
     MAX_FEEDS_PER_RUN = min(env_int("MAX_FEEDS_PER_RUN", len(NEWS_SOURCES), 1), len(NEWS_SOURCES))
     FEED_CONCURRENCY = env_int("FEED_CONCURRENCY", 6, 1)
     FEED_TIMEOUT_SECONDS = env_int("FEED_TIMEOUT_SECONDS", 12, 3)
     MAX_AI_CLASSIFICATIONS_PER_RUN = env_int("MAX_AI_CLASSIFICATIONS_PER_RUN", 8, 0)
+    READER_LOOKBACK_DAYS = env_int("READER_LOOKBACK_DAYS", 60, 7)
+    READER_LATEST_LIMIT = env_int("READER_LATEST_LIMIT", 90, 12)
+    READER_SECTION_LIMIT = env_int("READER_SECTION_LIMIT", 72, 12)
     EDITOR_INVITE_CODE = os.getenv("EDITOR_INVITE_CODE", "").strip()
 
     CLUSTER_EPS = env_float("CLUSTER_EPS", 0.46, 0.05)
@@ -456,6 +459,266 @@ def inject_css(mode: str = "Reader Mode") -> None:
                 font-size: 1.75rem;
             }
         }
+        .block-container {
+            max-width: 1360px;
+            padding-top: 0.9rem;
+            background: #fcfdfc;
+        }
+        .public-masthead {
+            align-items: center;
+            border-bottom: 1px solid #111827;
+            border-top: 4px solid #111827;
+            padding: 18px 0 16px 0;
+            margin-bottom: 10px;
+        }
+        .public-brand {
+            font-size: 3.05rem;
+            letter-spacing: 0;
+        }
+        .brand-kicker, .section-kicker {
+            color: #0d6b63;
+        }
+        .reader-edition-strip {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+            border-bottom: 1px solid var(--snl-line);
+            padding: 8px 0 14px 0;
+            margin-bottom: 10px;
+            color: var(--snl-muted);
+            font-size: 0.9rem;
+        }
+        .reader-nav-note {
+            color: var(--snl-muted);
+            font-size: 0.9rem;
+            margin: 8px 0 18px 0;
+        }
+        div[role="radiogroup"] {
+            gap: 0.35rem;
+        }
+        div[role="radiogroup"] label {
+            border: 1px solid var(--snl-line);
+            border-radius: 8px;
+            padding: 0.36rem 0.62rem;
+            background: #ffffff;
+        }
+        .reader-trust-bar {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0 22px 0;
+        }
+        .trust-item {
+            border-top: 2px solid #111827;
+            background: #ffffff;
+            padding: 12px 0 4px 0;
+        }
+        .trust-number {
+            font-family: Georgia, "Times New Roman", serif;
+            color: #111827;
+            font-size: 1.7rem;
+            font-weight: 760;
+        }
+        .trust-label {
+            color: var(--snl-muted);
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+        .front-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.9fr);
+            gap: 20px;
+            align-items: stretch;
+            margin-top: 8px;
+        }
+        .article-card {
+            border: 0;
+            border-top: 1px solid var(--snl-line);
+            background: transparent;
+            border-radius: 0;
+            padding: 16px 0 18px 0;
+            margin-bottom: 0;
+            min-height: 0;
+        }
+        .article-card-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 22px;
+            align-items: stretch;
+            border: 1px solid #111827;
+            border-radius: 8px;
+            padding: 18px;
+            background: #ffffff;
+            min-height: 440px;
+        }
+        .article-card-feature {
+            border: 1px solid var(--snl-line);
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 12px;
+            min-height: 360px;
+        }
+        .article-card-list {
+            display: grid;
+            grid-template-columns: 132px minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+        .story-visual {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #eaf3f1;
+            min-height: 155px;
+            border: 1px solid #d7e4e1;
+        }
+        .story-visual img {
+            width: 100%;
+            height: 100%;
+            min-height: 155px;
+            object-fit: cover;
+            display: block;
+        }
+        .story-visual-hero {
+            min-height: 398px;
+        }
+        .story-visual-hero img {
+            min-height: 398px;
+        }
+        .story-visual-list {
+            min-height: 96px;
+        }
+        .story-visual-list img {
+            min-height: 96px;
+        }
+        .story-visual-list .story-visual-placeholder {
+            font-size: 0.95rem;
+        }
+        .story-visual-placeholder {
+            height: 100%;
+            min-height: inherit;
+            display: flex;
+            align-items: end;
+            padding: 14px;
+            background:
+                linear-gradient(135deg, rgba(15, 118, 110, 0.16), rgba(183, 121, 31, 0.12)),
+                repeating-linear-gradient(45deg, rgba(17, 24, 39, 0.06) 0, rgba(17, 24, 39, 0.06) 1px, transparent 1px, transparent 10px);
+            color: #111827;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.45rem;
+            font-weight: 760;
+        }
+        .article-card h2 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 1.42rem;
+            line-height: 1.15;
+            margin: 10px 0 7px 0;
+        }
+        .article-card-hero h2 {
+            font-size: 2.85rem;
+            line-height: 1.04;
+            margin-top: 12px;
+        }
+        .article-card-feature h2 {
+            font-size: 1.42rem;
+        }
+        .article-card-list h2 {
+            font-size: 1.16rem;
+        }
+        .article-card p {
+            font-size: 0.98rem;
+            color: #4b5563;
+        }
+        .article-card-hero p {
+            font-size: 1.08rem;
+        }
+        .snl-badge {
+            border-radius: 6px;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0;
+            padding: 3px 7px;
+        }
+        .section-heading {
+            border-top: 2px solid #111827;
+            padding-top: 14px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .section-deck {
+            color: var(--snl-muted);
+            max-width: 760px;
+            margin: -5px 0 12px 0;
+            line-height: 1.5;
+        }
+        .latest-stream {
+            border-top: 1px solid var(--snl-line);
+        }
+        .compare-card {
+            border: 1px solid #111827;
+            background: #ffffff;
+            padding: 20px;
+        }
+        .compare-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin: 14px 0;
+        }
+        .compare-lens {
+            background: #f7faf9;
+            border: 1px solid #d7e4e1;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 112px;
+        }
+        .compare-lens-title {
+            color: #0d6b63;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-size: 0.76rem;
+        }
+        .source-perspective {
+            border-color: #d8dee6;
+            box-shadow: 0 8px 20px rgba(17, 24, 39, 0.04);
+        }
+        .insights-header {
+            border-top: 4px solid #111827;
+        }
+        .source-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .public-footer {
+            border-top: 2px solid #111827;
+            padding-top: 18px;
+            margin-top: 34px;
+        }
+        @media (max-width: 900px) {
+            .front-grid,
+            .article-card-hero,
+            .compare-grid,
+            .reader-trust-bar,
+            .source-summary-grid {
+                display: block;
+            }
+            .article-card-list {
+                grid-template-columns: 104px minmax(0, 1fr);
+            }
+            .story-visual-hero,
+            .story-visual-hero img {
+                min-height: 240px;
+            }
+            .article-card-hero h2 {
+                font-size: 2rem;
+            }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -508,6 +771,7 @@ def init_db(engine: Engine) -> None:
                 title TEXT NOT NULL,
                 summary TEXT,
                 content TEXT,
+                image_url TEXT,
                 source TEXT NOT NULL,
                 source_url TEXT,
                 region TEXT,
@@ -535,6 +799,7 @@ def init_db(engine: Engine) -> None:
         for column_name, column_sql in {
             "section": "section TEXT DEFAULT 'Somalia'",
             "source_category": "source_category TEXT",
+            "image_url": "image_url TEXT",
         }.items():
             if column_name not in existing_columns:
                 conn.execute(text(f"ALTER TABLE stories ADD COLUMN {column_sql}"))
@@ -572,6 +837,38 @@ def parse_feed_datetime(entry) -> Optional[datetime]:
     except Exception:
         return None
     return None
+
+
+def extract_entry_image(entry) -> str:
+    candidates = []
+    for key in ("media_thumbnail", "media_content"):
+        values = entry.get(key) or []
+        if isinstance(values, list):
+            candidates.extend(item.get("url") for item in values if isinstance(item, dict))
+
+    for link in entry.get("links", []) or []:
+        href = link.get("href") if isinstance(link, dict) else ""
+        content_type = str(link.get("type", "")) if isinstance(link, dict) else ""
+        if href and content_type.startswith("image/"):
+            candidates.append(href)
+
+    for field in ("summary", "description"):
+        match = re.search(r"<img[^>]+src=[\"']([^\"']+)", str(entry.get(field, "")), flags=re.IGNORECASE)
+        if match:
+            candidates.append(match.group(1))
+
+    if entry.get("content"):
+        for content_item in entry.get("content", []) or []:
+            value = content_item.get("value", "") if isinstance(content_item, dict) else ""
+            match = re.search(r"<img[^>]+src=[\"']([^\"']+)", value, flags=re.IGNORECASE)
+            if match:
+                candidates.append(match.group(1))
+
+    for candidate in candidates:
+        image_url = clean_text(candidate, 1000)
+        if image_url.startswith(("http://", "https://")):
+            return image_url
+    return ""
 
 
 def init_session_state() -> None:
@@ -866,6 +1163,7 @@ async def fetch_single_feed(session: aiohttp.ClientSession, feed_def: dict) -> t
                     "title": title,
                     "summary": summary,
                     "content": content,
+                    "image_url": extract_entry_image(entry),
                     "source": feed_def["name"],
                     "source_url": source_url,
                     "region": feed_def.get("region", "unknown"),
@@ -952,12 +1250,12 @@ def insert_articles(articles: list[dict]) -> int:
         statement = text("""
             INSERT INTO stories (
                 article_hash, title, summary, content,
-                source, source_url, region, section, source_category, language,
+                image_url, source, source_url, region, section, source_category, language,
                 published_at, fetched_at, bias, bias_confidence, ai_summary, cluster_label
             )
             VALUES (
                 :article_hash, :title, :summary, :content,
-                :source, :source_url, :region, :section, :source_category, :language,
+                :image_url, :source, :source_url, :region, :section, :source_category, :language,
                 :published_at, :fetched_at, :bias, :bias_confidence, :ai_summary, :cluster_label
             )
             ON CONFLICT (article_hash) DO NOTHING
@@ -966,12 +1264,12 @@ def insert_articles(articles: list[dict]) -> int:
         statement = text("""
             INSERT OR IGNORE INTO stories (
                 article_hash, title, summary, content,
-                source, source_url, region, section, source_category, language,
+                image_url, source, source_url, region, section, source_category, language,
                 published_at, fetched_at, bias, bias_confidence, ai_summary, cluster_label
             )
             VALUES (
                 :article_hash, :title, :summary, :content,
-                :source, :source_url, :region, :section, :source_category, :language,
+                :image_url, :source, :source_url, :region, :section, :source_category, :language,
                 :published_at, :fetched_at, :bias, :bias_confidence, :ai_summary, :cluster_label
             )
         """)
@@ -986,6 +1284,7 @@ def insert_articles(articles: list[dict]) -> int:
                     "title": article["title"],
                     "summary": article.get("summary"),
                     "content": article.get("content"),
+                    "image_url": article.get("image_url"),
                     "source": article["source"],
                     "source_url": article.get("source_url"),
                     "region": article.get("region"),
@@ -1134,18 +1433,52 @@ def story_link(row: pd.Series, label: str = "Read original") -> str:
     return f"<a class='story-link' href='{html.escape(str(url))}' target='_blank'>{html.escape(label)}</a>"
 
 
+def story_image_html(row: pd.Series, variant: str = "standard") -> str:
+    visual_class = "story-visual"
+    if variant == "hero":
+        visual_class += " story-visual-hero"
+    elif variant == "list":
+        visual_class += " story-visual-list"
+
+    image_url = clean_text(row.get("image_url") or "", 1000)
+    title = html.escape(str(row.get("title") or "News image"))
+    if image_url.startswith(("http://", "https://")):
+        return f"<div class='{visual_class}'><img src='{html.escape(image_url)}' alt='{title}' loading='lazy'></div>"
+
+    label = story_section(row)
+    return f"<div class='{visual_class}'><div class='story-visual-placeholder'>{html.escape(label)}</div></div>"
+
+
 def render_article_card(row: pd.Series, variant: str = "standard") -> None:
     title = html.escape(str(row.get("title") or "Untitled story"))
     excerpt_limit = 360 if variant == "hero" else 190
     excerpt = html.escape(story_excerpt(row, excerpt_limit))
-    class_name = "article-card article-card-hero" if variant == "hero" else "article-card"
+    class_name = f"article-card article-card-{variant}" if variant != "standard" else "article-card"
+    visual = story_image_html(row, variant)
+    if variant == "list":
+        body = f"""
+          {visual}
+          <div>
+            <div class="article-meta">{story_meta_html(row)}</div>
+            <h2>{title}</h2>
+            <p>{excerpt}</p>
+            <div class="article-footer">{story_link(row)}</div>
+          </div>
+        """
+    else:
+        body = f"""
+          {visual}
+          <div>
+            <div class="article-meta">{story_meta_html(row)}</div>
+            <h2>{title}</h2>
+            <p>{excerpt}</p>
+            <div class="article-footer">{story_link(row)}</div>
+          </div>
+        """
     st.markdown(
         f"""
         <article class="{class_name}">
-          <div class="article-meta">{story_meta_html(row)}</div>
-          <h2>{title}</h2>
-          <p>{excerpt}</p>
-          <div class="article-footer">{story_link(row)}</div>
+          {body}
         </article>
         """,
         unsafe_allow_html=True,
@@ -1171,6 +1504,38 @@ def empty_reader_state(title: str, message: str) -> None:
         <div class="reader-empty">
           <div class="empty-title">{html.escape(title)}</div>
           <div class="snl-muted">{html.escape(message)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def section_header(title: str, deck: str = "") -> None:
+    st.markdown(f"<div class='section-heading'>{html.escape(title)}</div>", unsafe_allow_html=True)
+    if deck:
+        st.markdown(f"<div class='section-deck'>{html.escape(deck)}</div>", unsafe_allow_html=True)
+
+
+def reader_trust_bar(df: pd.DataFrame) -> None:
+    source_count = int(df["source"].nunique()) if not df.empty and "source" in df.columns else len(Config.FEEDS)
+    somalia_count = 0
+    if not df.empty and "section" in df.columns:
+        somalia_count = int(df["section"].fillna("").str.lower().isin(["somalia", "humanitarian"]).sum())
+    st.markdown(
+        f"""
+        <div class="reader-trust-bar">
+          <div class="trust-item">
+            <div class="trust-number">{source_count} sources</div>
+            <div class="trust-label">recent coverage is drawn from a mixed Somali, regional, humanitarian, and international network</div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-number">Somalia first</div>
+            <div class="trust-label">{somalia_count} Somalia-focused stories are available in the current reader window</div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-number">Transparent</div>
+            <div class="trust-label">source links and cautious framing signals stay visible without turning the page into an analytics panel</div>
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1237,7 +1602,11 @@ def render_comparison_card(cluster_df: pd.DataFrame, public: bool = True) -> Non
     title = html.escape(str(first.get("title") or "Developing story"))
     source_count = cluster_df["source"].nunique()
     confidence = float(cluster_df["bias_confidence"].fillna(0).mean())
-    heading = "Compare how sources covered this story" if public else "Coverage intelligence"
+    heading = "See how outlets covered this story" if public else "Coverage intelligence"
+    emphases = sorted({coverage_emphasis(f"{item.get('title', '')} {item.get('summary', '')}") for item in items})
+    emphasis_text = ", ".join(emphases[:4]) if emphases else "General update"
+    bias_mix = ", ".join(cluster_df["bias"].fillna("center").value_counts().head(3).index.astype(str).tolist())
+    source_names = ", ".join(sorted(cluster_df["source"].dropna().astype(str).unique())[:5])
     st.markdown(
         f"""
         <div class="compare-card">
@@ -1248,7 +1617,21 @@ def render_comparison_card(cluster_df: pd.DataFrame, public: bool = True) -> Non
             {badge(story_section(first), "region")}
             {badge(f"avg confidence {confidence:.0%}", "neutral")}
           </div>
-          <p>{html.escape(cluster_summary(items))}</p>
+          <div class="compare-grid">
+            <div class="compare-lens">
+              <div class="compare-lens-title">What they agree on</div>
+              <p>{html.escape(cluster_summary(items).replace("Common facts: ", ""))}</p>
+            </div>
+            <div class="compare-lens">
+              <div class="compare-lens-title">Emphasis differs around</div>
+              <p>{html.escape(emphasis_text)}. These labels describe visible story emphasis, not a judgment about accuracy.</p>
+            </div>
+            <div class="compare-lens">
+              <div class="compare-lens-title">Source map</div>
+              <p>{html.escape(source_names)}{html.escape("..." if source_count > 5 else "")}</p>
+              <p>Framing mix: {html.escape(bias_mix or "center")}</p>
+            </div>
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1273,13 +1656,17 @@ def render_comparison_card(cluster_df: pd.DataFrame, public: bool = True) -> Non
 
 def render_public_header() -> str:
     st.markdown(
-        """
+        f"""
         <div class="public-masthead">
           <div>
-            <div class="brand-kicker">Somali and world coverage, compared</div>
+            <div class="brand-kicker">Independent source intelligence for Somali readers</div>
             <div class="public-brand">Somali News Lens</div>
           </div>
-          <div class="masthead-note">Source-transparent news with reader-friendly coverage comparison.</div>
+          <div class="masthead-note">A modern Somali front page with built-in coverage comparison across {len(Config.FEEDS)} monitored sources.</div>
+        </div>
+        <div class="reader-edition-strip">
+          <div>Reader edition: story-first, source-transparent, Somalia-focused.</div>
+          <div>Editor workspace: ingestion, health, analytics, and operations.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1295,17 +1682,22 @@ def render_public_header() -> str:
 
 
 def render_reader_nav() -> str:
-    return st.radio(
+    page = st.radio(
         "Reader navigation",
         ["Home", "Latest", "Somalia", "World", "Compare Coverage", "About"],
         horizontal=True,
         label_visibility="collapsed",
         key="reader_page",
     )
+    st.markdown(
+        "<div class='reader-nav-note'>Browse the public edition, then open Compare Coverage when you want to see how different outlets frame the same developing story.</div>",
+        unsafe_allow_html=True,
+    )
+    return page
 
 
 def reader_home_page(df: pd.DataFrame) -> None:
-    st.markdown("<div class='section-kicker'>Today in focus</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-kicker'>Front page</div>", unsafe_allow_html=True)
     if df.empty:
         empty_reader_state(
             "The newsroom is ready.",
@@ -1314,57 +1706,76 @@ def reader_home_page(df: pd.DataFrame) -> None:
         return
 
     ordered = df.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last")
+    reader_trust_bar(ordered)
     lead = ordered.iloc[0]
-    hero_col, rail_col = st.columns([1.8, 1])
-    with hero_col:
+    left, right = st.columns([1.65, 0.95])
+    with left:
         render_article_card(lead, "hero")
-    with rail_col:
-        st.markdown("<div class='rail-title'>Top stories</div>", unsafe_allow_html=True)
-        for _, row in ordered.iloc[1:5].iterrows():
+    with right:
+        st.markdown("<div class='rail-title'>Worth your attention</div>", unsafe_allow_html=True)
+        st.markdown("<div class='snl-muted snl-small'>Fast scan of the next stories moving through the source network.</div>", unsafe_allow_html=True)
+        for _, row in ordered.iloc[1:7].iterrows():
             render_compact_story(row)
-
-    st.markdown("<div class='section-heading'>Latest News</div>", unsafe_allow_html=True)
+    section_header("Latest News", "A broader wire view so readers can keep moving beyond the first screen.")
     cols = st.columns(3)
-    for idx, (_, row) in enumerate(ordered.iloc[5:14].iterrows()):
+    for idx, (_, row) in enumerate(ordered.iloc[7:25].iterrows()):
         with cols[idx % 3]:
-            render_article_card(row)
+            render_article_card(row, "feature")
 
     somalia = ordered[ordered["section"].fillna("Somalia").str.lower().isin(["somalia", "humanitarian"])]
-    st.markdown("<div class='section-heading'>Somalia</div>", unsafe_allow_html=True)
+    section_header("Somalia", "National, regional, diaspora, humanitarian, and Somali-language international reporting in one place.")
     if somalia.empty:
         empty_reader_state("Somalia coverage will appear here.", "Ingest feeds to populate national and regional stories.")
     else:
         cols = st.columns(2)
-        for idx, (_, row) in enumerate(somalia.head(6).iterrows()):
+        for idx, (_, row) in enumerate(somalia.head(12).iterrows()):
             with cols[idx % 2]:
-                render_article_card(row)
+                render_article_card(row, "list")
 
     world = ordered[ordered["section"].fillna("").str.lower().isin(["world", "africa"])]
-    st.markdown("<div class='section-heading'>World and Region</div>", unsafe_allow_html=True)
+    section_header("World and Region", "International and Horn of Africa context that helps explain the wider story environment.")
     if world.empty:
         empty_reader_state("International context is still loading.", "World and Horn of Africa stories will appear after ingestion.")
     else:
         cols = st.columns(2)
-        for idx, (_, row) in enumerate(world.head(4).iterrows()):
+        for idx, (_, row) in enumerate(world.head(8).iterrows()):
             with cols[idx % 2]:
-                render_article_card(row)
+                render_article_card(row, "list")
 
-    st.markdown("<div class='section-heading'>Compare Coverage</div>", unsafe_allow_html=True)
-    render_reader_compare(df, limit=2)
+    section_header("Compare Coverage", "The signature feature: see what sources agree on, where emphasis differs, and how the story is still developing.")
+    render_reader_compare(df, limit=3)
 
 
 def reader_latest_page(df: pd.DataFrame) -> None:
-    st.markdown("<div class='section-heading'>Latest</div>", unsafe_allow_html=True)
+    section_header("Latest", "A deeper reverse-chronological stream from the monitored source network.")
     if df.empty:
         empty_reader_state("No latest stories yet.", "The latest feed fills after the editor ingests source updates.")
         return
     ordered = df.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last")
-    for _, row in ordered.head(30).iterrows():
-        render_article_card(row)
+    query = st.text_input("Search latest stories", placeholder="Search by headline, source, region, or topic")
+    if query.strip():
+        q = query.strip().lower()
+        ordered = ordered[
+            ordered["title"].fillna("").str.lower().str.contains(q, regex=False)
+            | ordered["summary"].fillna("").str.lower().str.contains(q, regex=False)
+            | ordered["source"].fillna("").str.lower().str.contains(q, regex=False)
+            | ordered["region"].fillna("").str.lower().str.contains(q, regex=False)
+        ]
+    if ordered.empty:
+        empty_reader_state("No stories match that search.", "Try a source name, region, or broader topic.")
+        return
+    st.caption(f"Showing up to {Config.READER_LATEST_LIMIT} stories from the last {Config.READER_LOOKBACK_DAYS} days.")
+    for _, row in ordered.head(Config.READER_LATEST_LIMIT).iterrows():
+        render_article_card(row, "list")
 
 
 def reader_section_page(df: pd.DataFrame, section_name: str) -> None:
-    st.markdown(f"<div class='section-heading'>{html.escape(section_name)}</div>", unsafe_allow_html=True)
+    deck = (
+        "Somalia-first coverage from national, regional, diaspora, humanitarian, and Somali-language sources."
+        if section_name.lower() == "somalia"
+        else "Global and regional context from international and Africa-focused feeds."
+    )
+    section_header(section_name, deck)
     if df.empty:
         empty_reader_state(f"No {section_name.lower()} stories yet.", "Check back after the next feed update.")
         return
@@ -1377,9 +1788,10 @@ def reader_section_page(df: pd.DataFrame, section_name: str) -> None:
         empty_reader_state(f"No {section_name.lower()} stories yet.", "This section will populate as matching sources publish updates.")
         return
     cols = st.columns(3)
-    for idx, (_, row) in enumerate(subset.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last").head(24).iterrows()):
+    st.caption(f"Showing up to {Config.READER_SECTION_LIMIT} stories.")
+    for idx, (_, row) in enumerate(subset.sort_values(by=["published_at", "fetched_at"], ascending=False, na_position="last").head(Config.READER_SECTION_LIMIT).iterrows()):
         with cols[idx % 3]:
-            render_article_card(row)
+            render_article_card(row, "feature")
 
 
 def render_reader_compare(df: pd.DataFrame, limit: int = 6) -> None:
@@ -1406,16 +1818,20 @@ def reader_about_page() -> None:
     st.markdown(
         """
         <div class="about-panel">
-          <div class="section-kicker">About this project</div>
-          <h2>Somali News Lens helps readers see the story and the coverage around it.</h2>
+          <div class="section-kicker">About and methodology</div>
+          <h2>A Somali front page built around transparency, not outrage.</h2>
           <p>
-            The site gathers public RSS feeds from Somali, regional, humanitarian, and international publishers.
-            Reader Mode presents a clean news experience. Compare Coverage adds transparency by showing which
-            sources reported similar stories and how their framing signals differ.
+            Somali News Lens gathers public RSS feeds from Somali national outlets, regional publishers,
+            diaspora voices, humanitarian sources, and international newsrooms. Reader Mode keeps the experience
+            story-first, while Compare Coverage adds context about who else reported the same development.
           </p>
           <p>
-            Framing labels are assistive signals, not final judgments. They can be generated by OpenAI when configured
-            or by a simple local fallback when the app is running without an API key.
+            Framing labels are assistive signals, not verdicts. They are meant to help readers notice emphasis,
+            source mix, and confidence, while the original reporting remains one click away.
+          </p>
+          <p>
+            Editor / Insights Mode is private by design. It handles feed refreshes, source health, analytics,
+            and maintenance without exposing operational controls to public visitors.
           </p>
         </div>
         """,
@@ -1428,7 +1844,7 @@ def render_reader_mode(db_ready: bool) -> None:
     if not db_ready:
         empty_reader_state("Coverage is temporarily unavailable.", "The database is not reachable. No secrets or internal diagnostics are shown here.")
         return
-    df = load_stories_for_reader(30)
+    df = load_stories_for_reader(Config.READER_LOOKBACK_DAYS)
     if reader_page == "Home":
         reader_home_page(df)
     elif reader_page == "Latest":
@@ -1438,8 +1854,7 @@ def render_reader_mode(db_ready: bool) -> None:
     elif reader_page == "World":
         reader_section_page(df, "World")
     elif reader_page == "Compare Coverage":
-        st.markdown("<div class='section-heading'>Compare Coverage</div>", unsafe_allow_html=True)
-        st.markdown("<p class='reader-intro'>See how multiple sources covered the same developing story.</p>", unsafe_allow_html=True)
+        section_header("Compare Coverage", "See how multiple sources covered the same developing story, without turning the reader experience into a technical dashboard.")
         render_reader_compare(df, limit=10)
     else:
         reader_about_page()
@@ -1641,6 +2056,32 @@ def sources_page() -> None:
             }
         )
     source_df = pd.DataFrame(rows)
+    healthy = int((source_df["status"] == "healthy").sum()) if "status" in source_df else 0
+    checked = int((source_df["status"] != "not checked").sum()) if "status" in source_df else 0
+    categories = int(source_df["category"].nunique()) if "category" in source_df else 0
+    regions = int(source_df["section"].nunique()) if "section" in source_df else 0
+    st.markdown(
+        f"""
+        <div class="source-summary-grid">
+          <div class="trust-item"><div class="trust-number">{len(source_df)}</div><div class="trust-label">configured sources</div></div>
+          <div class="trust-item"><div class="trust-number">{healthy}/{checked or len(source_df)}</div><div class="trust-label">healthy in latest checked run</div></div>
+          <div class="trust-item"><div class="trust-number">{categories}</div><div class="trust-label">source categories</div></div>
+          <div class="trust-item"><div class="trust-number">{regions}</div><div class="trust-label">editorial sections represented</div></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    source_filter = st.selectbox("Filter source directory", ["All", "Healthy", "Warnings / failed", "Somalia", "World / Africa", "Humanitarian"])
+    if source_filter == "Healthy":
+        source_df = source_df[source_df["status"] == "healthy"]
+    elif source_filter == "Warnings / failed":
+        source_df = source_df[source_df["status"].isin(["warning", "failed"])]
+    elif source_filter == "Somalia":
+        source_df = source_df[source_df["section"].isin(["Somalia"])]
+    elif source_filter == "World / Africa":
+        source_df = source_df[source_df["section"].isin(["World", "Africa"])]
+    elif source_filter == "Humanitarian":
+        source_df = source_df[source_df["section"].isin(["Humanitarian"])]
     st.dataframe(source_df, use_container_width=True, hide_index=True)
 
 
@@ -1770,9 +2211,8 @@ def render_insights_mode(db_ready: bool, db_label: str) -> None:
 
 def main() -> None:
     init_session_state()
-    mode = st.session_state.get("product_mode", "Reader Mode")
-    inject_css(mode)
     selected_mode = render_public_header()
+    inject_css(selected_mode)
     ready, db_label = database_ready()
 
     if selected_mode == "Reader Mode":

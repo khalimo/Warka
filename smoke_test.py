@@ -17,6 +17,7 @@ def main() -> None:
         "title": "Smoke story",
         "summary": "Security reform and rights discussion.",
         "content": "",
+        "image_url": "",
         "source": "Smoke Source",
         "source_url": "https://example.com/smoke",
         "region": "test",
@@ -57,7 +58,7 @@ def main() -> None:
     ok, _ = app.login_user(username, "pass1234")
     assert ok
 
-    assert len(NEWS_SOURCES) >= 30
+    assert len(NEWS_SOURCES) >= 36
     assert any(source["section"] == "Somalia" for source in NEWS_SOURCES)
 
     print("Smoke test passed")
