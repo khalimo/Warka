@@ -57,7 +57,7 @@ def main() -> None:
     ok, _ = app.login_user(username, "pass1234")
     assert ok
 
-    assert len(NEWS_SOURCES) >= 12
+    assert len(NEWS_SOURCES) >= 30
     assert any(source["section"] == "Somalia" for source in NEWS_SOURCES)
 
     print("Smoke test passed")

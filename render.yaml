@@ -12,7 +12,7 @@ services:
       - key: OPENAI_ENABLED
         value: "true"
       - key: MAX_FEEDS_PER_RUN
-        value: "18"
+        value: "31"
       - key: MAX_ARTICLES_PER_FEED
         value: "12"
       - key: FEED_CONCURRENCY

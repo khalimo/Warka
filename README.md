@@ -39,22 +39,35 @@ Insights Mode requires sign-in before dashboard, ingestion, source health, analy
 
 ## Source Coverage
 
-The source catalog lives in `sources.py`. It includes Somali national, regional Somali, diaspora, humanitarian, Africa-region, and international feeds.
+The source catalog lives in `sources.py`. It includes Somali national, regional Somali, Somaliland, diaspora, humanitarian, Africa-region, Somali-language international, and global feeds. The default Render config ingests the full configured catalog while keeping per-feed article caps and concurrency low enough for free-tier testing.
 
 Current configured sources include:
 
 - Hiiraan Online
 - SONNA English
+- Radio Muqdisho
+- Somali National TV
+- BBC Somali
+- VOA Somali
 - Shabelle Media
 - Goobjoog English
 - Caasimada Online
+- Raxanreeb Online
 - Jowhar
 - Puntland Post
 - Horseed Media
+- Hiiraanweyn
+- Puntland Mirror
 - Somali Guardian
 - Somali Dispatch
 - The Somali Digest
+- Idil News
+- Goobjooge
 - Wardheer News
+- Radio Ergo
+- Somaliland Chronicle
+- Berbera News
+- Wargeyska Dawan
 - AllAfrica Somalia
 - ReliefWeb Somalia
 - The Guardian Somalia
@@ -117,7 +130,7 @@ Optional:
 OPENAI_API_KEY
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_ENABLED=true
-MAX_FEEDS_PER_RUN=18
+MAX_FEEDS_PER_RUN=31
 MAX_ARTICLES_PER_FEED=12
 FEED_CONCURRENCY=6
 MAX_AI_CLASSIFICATIONS_PER_RUN=8
