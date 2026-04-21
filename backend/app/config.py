@@ -1,0 +1,45 @@
+from __future__ import annotations
+
+import json
+from functools import lru_cache
+from typing import Any
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    database_url: str
+    openai_api_key: str = ""
+    enable_openai: bool = False
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    feed_timeout: int = 30
+    feed_limit_per_source: int = 20
+    ingest_lookback_hours: int = 48
+    log_level: str = "INFO"
+    cluster_similarity_threshold: float = 0.6
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: Any) -> list[str]:
+        if value is None or value == "":
+            return ["http://localhost:3000"]
+        if isinstance(value, list):
+            return [str(item).strip() for item in value if str(item).strip()]
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return ["http://localhost:3000"]
+            if raw.startswith("["):
+                loaded = json.loads(raw)
+                return [str(item).strip() for item in loaded if str(item).strip()]
+            return [part.strip() for part in raw.split(",") if part.strip()]
+        raise ValueError("Invalid CORS origins format")
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()
+
