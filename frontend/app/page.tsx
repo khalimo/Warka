@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { HeroStoryCard } from '@/components/story/HeroStoryCard'
 import { StoryCardCompact } from '@/components/story/StoryCardCompact'
 import { StoryCardLarge } from '@/components/story/StoryCardLarge'
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { apiClient } from '@/lib/api'
 
 export const metadata = {
@@ -16,9 +17,14 @@ export default async function HomePage() {
 
   if (!homeData) {
     return (
-      <div className="container-custom py-20 text-center">
-        <h1 className="mb-4 text-3xl font-bold">Welcome to Warka</h1>
-        <p className="text-gray-600">Loading the latest news from Somalia...</p>
+      <div className="container-custom py-12">
+        <LoadingSkeleton variant="hero" />
+        <div className="mt-10 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+          <h1 className="mb-2 text-2xl font-bold">We couldn&apos;t load the front page just now</h1>
+          <p className="text-gray-600">
+            The latest stories are temporarily unavailable. Please try again in a moment.
+          </p>
+        </div>
       </div>
     )
   }

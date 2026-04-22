@@ -12,6 +12,7 @@ from app.repositories.ingest_run_repository import IngestRunRepository
 from app.repositories.source_repository import SourceRepository
 from app.repositories.story_repository import StoryRepository
 from app.services.clustering_service import run_clustering
+from app.services.enrichment_service import enrich_story_content, get_category_image
 from app.services.feed_service import FeedFetchError, fetch_feed_entries
 from app.services.normalization_service import derive_topics, make_story_slug, normalize_category, normalize_region
 from app.services.sanitization_service import sanitize_html
@@ -120,12 +121,23 @@ def run_ingestion(db: Session) -> models.IngestRun:
                 region = normalize_region(source_category=source.category, title=title, summary=excerpt)
                 topics = derive_topics(title=title, summary=excerpt, category=category)
 
+                initial_summary = strip_html(raw_summary)[:600] if raw_summary else excerpt
+                enrichment = enrich_story_content(
+                    url=link,
+                    title=title,
+                    excerpt=excerpt,
+                    current_content_html=sanitized_content,
+                    current_summary=initial_summary,
+                    current_image_url=_entry_image(entry),
+                    category=category,
+                )
+
                 db_story = models.Story(
                     slug=make_story_slug(title=title, published_at=published_at),
                     title=title,
                     excerpt=excerpt,
-                    content_html=sanitized_content,
-                    summary=strip_html(raw_summary)[:600] if raw_summary else excerpt,
+                    content_html=enrichment["content_html"],
+                    summary=enrichment["summary"],
                     source_id=source.id,
                     original_url=link,
                     canonical_url_hash=url_hash,
@@ -134,8 +146,8 @@ def run_ingestion(db: Session) -> models.IngestRun:
                     region=region,
                     category=category,
                     topics=topics,
-                    image_url=_entry_image(entry),
-                    reading_time=estimate_reading_time(sanitized_content or excerpt),
+                    image_url=enrichment["image_url"] or get_category_image(category),
+                    reading_time=estimate_reading_time(enrichment["content_html"] or excerpt),
                     is_breaking=category in {"security", "politics"} and "breaking" in title.lower(),
                 )
                 try:

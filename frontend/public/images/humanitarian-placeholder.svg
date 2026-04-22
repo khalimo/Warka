@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Humanitarian placeholder</title>
+  <desc id="desc">Editorial placeholder image for humanitarian stories.</desc>
+  <rect width="1200" height="675" fill="#fffaf0"/>
+  <rect x="72" y="72" width="1056" height="531" rx="24" fill="#fffbeb" stroke="#fcd34d"/>
+  <rect x="120" y="140" width="260" height="18" rx="9" fill="#d97706"/>
+  <rect x="120" y="208" width="740" height="42" rx="12" fill="#92400e" opacity="0.92"/>
+  <rect x="120" y="270" width="640" height="42" rx="12" fill="#b45309" opacity="0.82"/>
+  <rect x="120" y="352" width="520" height="18" rx="9" fill="#fde68a"/>
+  <rect x="120" y="390" width="620" height="18" rx="9" fill="#fde68a"/>
+  <circle cx="972" cy="290" r="84" fill="#f59e0b" opacity="0.22"/>
+  <path d="M932 288c0-28 18-48 40-48s40 20 40 48c0 44-40 84-40 84s-40-40-40-84z" fill="#b45309"/>
+</svg>

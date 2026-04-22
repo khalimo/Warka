@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { apiClient } from '@/lib/api'
@@ -11,16 +12,38 @@ interface StoryPageProps {
   }
 }
 
-export async function generateMetadata({ params }: StoryPageProps) {
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+export async function generateMetadata({ params }: StoryPageProps): Promise<Metadata> {
   const story = await apiClient.getStory(params.slug)
 
   if (!story) {
     return { title: 'Story Not Found' }
   }
 
+  const description = story.excerpt || story.summary || 'Read the latest reporting from Warka.'
+  const storyUrl = `${siteUrl}/story/${story.slug}`
+
   return {
     title: story.title,
-    description: story.excerpt,
+    description,
+    alternates: {
+      canonical: storyUrl,
+    },
+    openGraph: {
+      title: story.title,
+      description,
+      type: 'article',
+      url: storyUrl,
+      images: story.imageUrl ? [{ url: story.imageUrl }] : [],
+      publishedTime: story.publishedAt,
+    },
+    twitter: {
+      card: story.imageUrl ? 'summary_large_image' : 'summary',
+      title: story.title,
+      description,
+      images: story.imageUrl ? [story.imageUrl] : [],
+    },
   }
 }
 
@@ -31,9 +54,32 @@ export default async function StoryPage({ params }: StoryPageProps) {
     notFound()
   }
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: story.title,
+    description: story.excerpt || story.summary,
+    datePublished: story.publishedAt,
+    dateModified: story.updatedAt || story.publishedAt,
+    image: story.imageUrl ? [story.imageUrl] : undefined,
+    mainEntityOfPage: `${siteUrl}/story/${story.slug}`,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Warka',
+    },
+    author: {
+      '@type': 'Organization',
+      name: story.source.name,
+    },
+  }
+
   return (
     <article className="container-custom py-12">
       <div className="mx-auto max-w-3xl">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <div className="mb-4 flex flex-wrap gap-3">
           <SourceBadge source={story.source} />
           {story.framing ? <FramingBadge framing={story.framing} /> : null}
@@ -53,7 +99,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
 
         {story.imageUrl ? (
           <div className="mb-8 overflow-hidden rounded-lg">
-            <img src={story.imageUrl} alt={story.title} className="h-auto w-full" />
+            <img src={story.imageUrl} alt={story.title} className="h-auto w-full object-cover" />
           </div>
         ) : null}
 
@@ -73,7 +119,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
             href={story.originalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary-600 hover:underline"
+            className="inline-flex items-center rounded-full bg-primary-50 px-4 py-2 font-medium text-primary-700 transition-colors hover:bg-primary-100"
           >
             Read original story on {story.source.name} →
           </Link>

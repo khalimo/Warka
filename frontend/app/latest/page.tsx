@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/ui/EmptyState'
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { StoryCardCompact } from '@/components/story/StoryCardCompact'
 import { apiClient } from '@/lib/api'
@@ -11,7 +12,21 @@ export const metadata = {
 export default async function LatestPage() {
   const result = await apiClient.getLatestStories(50, 0)
 
-  if (!result || result.items.length === 0) {
+  if (!result) {
+    return (
+      <div className="container-custom py-12">
+        <LoadingSkeleton variant="list" count={6} />
+        <div className="mt-8">
+          <EmptyState
+            title="We couldn&apos;t load the latest stories"
+            message="The latest feed is temporarily unavailable. Please try again shortly."
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (result.items.length === 0) {
     return (
       <div className="container-custom py-12">
         <EmptyState title="No stories yet" message="Ingestion may still be running." />

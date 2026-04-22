@@ -10,6 +10,20 @@ import {
   Story,
 } from './types'
 
+function getCategoryImage(category?: string | null): string {
+  const placeholders: Record<string, string> = {
+    politics: '/images/politics-placeholder.svg',
+    security: '/images/security-placeholder.svg',
+    economy: '/images/economy-placeholder.svg',
+    humanitarian: '/images/humanitarian-placeholder.svg',
+    diaspora: '/images/diaspora-placeholder.svg',
+    default: '/images/default-placeholder.svg',
+  }
+
+  const normalized = (category || '').toLowerCase()
+  return placeholders[normalized] || placeholders.default
+}
+
 function mapFramingTone(
   tone?: string | null
 ): 'positive' | 'neutral' | 'negative' | 'mixed' {
@@ -53,7 +67,7 @@ export function mapStory(story: BackendStory): Story {
           tone: mapFramingTone(story.framing.tone),
         }
       : undefined,
-    imageUrl: story.image_url || undefined,
+    imageUrl: story.image_url || getCategoryImage(story.category),
     originalUrl: story.original_url,
     readingTime: story.reading_time || undefined,
     clusterId: story.cluster_id || undefined,

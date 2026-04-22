@@ -9,6 +9,7 @@ Production FastAPI backend for Warka, a Somali news aggregation and comparison p
 - Alembic migrations for schema management
 - PostgreSQL-ready persistence
 - RSS ingestion with `httpx` + `feedparser`
+- Lightweight article enrichment with `beautifulsoup4`
 - HTML sanitization with `bleach`
 - Deterministic V1 clustering with Jaccard similarity
 - Startup-safe seeding for the 5 canonical sources
@@ -70,7 +71,6 @@ Required environment variables:
 
 ```text
 DATABASE_URL
-OPENAI_API_KEY
 ENABLE_OPENAI=false
 CORS_ORIGINS=["https://your-frontend-domain.com","http://localhost:3000"]
 FEED_TIMEOUT=30
@@ -79,6 +79,32 @@ INGEST_LOOKBACK_HOURS=48
 LOG_LEVEL=INFO
 CLUSTER_SIMILARITY_THRESHOLD=0.6
 ```
+
+Optional:
+
+```text
+OPENAI_API_KEY
+```
+
+For a split Render/Vercel deployment, set `CORS_ORIGINS` to include both your production frontend URL and local development URL. Example:
+
+```text
+CORS_ORIGINS=["https://warka-news.vercel.app","http://localhost:3000"]
+```
+
+## Active Sources
+
+The backend now seeds and keeps these active feeds in sync:
+
+- BBC Somali — `https://feeds.bbci.co.uk/somali/rss.xml`
+- Hiiraan Online — `https://www.hiiraan.com/news.xml`
+- Horseed Media — `https://horseedmedia.net/feed`
+- SONNA — `https://sonna.so/en/feed`
+- Caasimada — `https://www.caasimada.net/feed/`
+- Goobjoog — `https://goobjoog.com/feed/`
+- Radio Muqdisho — `https://radiomuqdisho.so/feed/`
+
+Legacy Garowe Online is marked inactive because its RSS endpoint currently returns HTTP 500.
 
 ## API Endpoints
 
@@ -162,5 +188,6 @@ Set up a cron job locally:
 ## Notes
 
 - OpenAI enrichment is optional and currently not required for clustering.
+- If feed content is too thin or an image is missing, the ingestion pipeline now attempts a lightweight article-page enrichment pass before falling back to category placeholder artwork.
 - Search, auth, newsletter APIs, and advanced clustering are intentionally excluded for this backend version.
 - The backend assumes migrations have been applied before normal startup.

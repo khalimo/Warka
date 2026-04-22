@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -24,12 +24,31 @@ class SourceRepository:
     def get_by_id(self, source_id: str) -> Optional[models.Source]:
         return self.db.get(models.Source, source_id)
 
-    def seed_sources(self, seed_items: list[dict[str, str]]) -> None:
-        existing_ids = set(self.db.scalars(select(models.Source.id)))
+    def seed_sources(
+        self,
+        seed_items: list[dict[str, str]],
+        deactivate_ids: Optional[Sequence[str]] = None,
+    ) -> None:
+        existing_sources = {
+            source.id: source
+            for source in self.db.scalars(select(models.Source))
+        }
         for item in seed_items:
-            if item["id"] in existing_ids:
+            existing = existing_sources.get(item["id"])
+            if existing is None:
+                self.db.add(models.Source(**item))
                 continue
-            self.db.add(models.Source(**item))
+
+            for field, value in item.items():
+                setattr(existing, field, value)
+            self.db.add(existing)
+
+        for source_id in deactivate_ids or []:
+            existing = existing_sources.get(source_id)
+            if existing is None:
+                continue
+            existing.is_active = False
+            self.db.add(existing)
         self.db.commit()
 
     def mark_success(self, source: models.Source, timestamp: datetime) -> None:

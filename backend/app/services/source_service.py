@@ -23,21 +23,10 @@ SEED_SOURCES = [
         "is_active": True,
     },
     {
-        "id": "garowe-online",
-        "name": "Garowe Online",
-        "base_url": "https://garoweonline.com",
-        "feed_url": "https://garoweonline.com/en/rss-feed",
-        "category": "somali_regional",
-        "description": "Regional Somali reporting from Garowe Online.",
-        "language": "en",
-        "country": "SO",
-        "is_active": True,
-    },
-    {
         "id": "hiiraan-online",
         "name": "Hiiraan Online",
         "base_url": "https://www.hiiraan.com",
-        "feed_url": "https://www.hiiraan.com/rss/news.xml",
+        "feed_url": "https://www.hiiraan.com/news.xml",
         "category": "somali_national",
         "description": "Somali national news from Hiiraan Online.",
         "language": "en",
@@ -56,6 +45,39 @@ SEED_SOURCES = [
         "is_active": True,
     },
     {
+        "id": "caasimada",
+        "name": "Caasimada",
+        "base_url": "https://www.caasimada.net",
+        "feed_url": "https://www.caasimada.net/feed/",
+        "category": "somali_national",
+        "description": "Somali political and general news from Caasimada.",
+        "language": "so",
+        "country": "SO",
+        "is_active": True,
+    },
+    {
+        "id": "goobjoog",
+        "name": "Goobjoog",
+        "base_url": "https://goobjoog.com",
+        "feed_url": "https://goobjoog.com/feed/",
+        "category": "somali_national",
+        "description": "Somali current affairs and national reporting from Goobjoog.",
+        "language": "en",
+        "country": "SO",
+        "is_active": True,
+    },
+    {
+        "id": "radio-muqdisho",
+        "name": "Radio Muqdisho",
+        "base_url": "https://radiomuqdisho.so",
+        "feed_url": "https://radiomuqdisho.so/feed/",
+        "category": "official",
+        "description": "Public service Somali news coverage from Radio Muqdisho.",
+        "language": "so",
+        "country": "SO",
+        "is_active": True,
+    },
+    {
         "id": "sonna",
         "name": "SONNA",
         "base_url": "https://sonna.so/en",
@@ -68,9 +90,12 @@ SEED_SOURCES = [
     },
 ]
 
+DEACTIVATED_SOURCE_IDS = [
+    "garowe-online",
+]
+
 
 def seed_initial_sources(db: Session) -> None:
     repository = SourceRepository(db)
-    repository.seed_sources(SEED_SOURCES)
+    repository.seed_sources(SEED_SOURCES, deactivate_ids=DEACTIVATED_SOURCE_IDS)
     logger.info("Source seeding checked for %d canonical feeds", len(SEED_SOURCES))
-
