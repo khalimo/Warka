@@ -62,6 +62,9 @@ class Cluster(Base):
     ai_generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     ai_model_used: Mapped[Optional[str]] = mapped_column(String)
     has_ai_synthesis: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    ai_review_status: Mapped[Optional[str]] = mapped_column(String)
+    ai_review_note: Mapped[Optional[str]] = mapped_column(Text)
+    ai_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     story_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[Optional[datetime]] = mapped_column(

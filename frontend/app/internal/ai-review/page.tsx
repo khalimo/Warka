@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 
+import { AIReviewControls } from '@/components/internal/AIReviewControls'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 import { TimeAgo } from '@/components/ui/TimeAgo'
@@ -124,6 +125,7 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
                         {cluster.aiGeneratedAt ? <TimeAgo date={cluster.aiGeneratedAt} /> : 'Not recorded'}
                       </div>
                       <div>AI model: {cluster.aiModelUsed || 'Not recorded'}</div>
+                      <div>Review status: {cluster.aiReviewStatus || 'unreviewed'}</div>
                     </div>
                   </div>
                 </div>
@@ -206,6 +208,8 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
                     </div>
                   </section>
                 </div>
+
+                <AIReviewControls cluster={cluster} />
               </article>
             ))}
           </div>

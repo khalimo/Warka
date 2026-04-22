@@ -53,6 +53,9 @@ export interface CompareCluster {
   aiGeneratedAt?: string
   aiModelUsed?: string
   hasAISynthesis?: boolean
+  aiReviewStatus?: 'unreviewed' | 'good' | 'weak' | 'misleading' | 'hallucinated'
+  aiReviewNote?: string
+  aiReviewedAt?: string
   createdAt?: string
   updatedAt?: string
   storyCount?: number
@@ -128,11 +131,38 @@ export interface BackendCluster {
   ai_generated_at?: string | null
   ai_model_used?: string | null
   has_ai_synthesis?: boolean
+  ai_review_status?: 'unreviewed' | 'good' | 'weak' | 'misleading' | 'hallucinated' | null
+  ai_review_note?: string | null
+  ai_reviewed_at?: string | null
   created_at?: string
   updated_at?: string | null
   story_count?: number
   stories: BackendStory[]
   sources: BackendSource[]
+}
+
+export interface AIReviewUpdatePayload {
+  reviewStatus: 'unreviewed' | 'good' | 'weak' | 'misleading' | 'hallucinated'
+  reviewNote?: string
+}
+
+export interface BackendAIReviewUpdatePayload {
+  review_status: 'unreviewed' | 'good' | 'weak' | 'misleading' | 'hallucinated'
+  review_note?: string
+}
+
+export interface AIReviewUpdateResponse {
+  clusterId: string
+  aiReviewStatus: 'unreviewed' | 'good' | 'weak' | 'misleading' | 'hallucinated'
+  aiReviewNote?: string
+  aiReviewedAt?: string
+}
+
+export interface BackendAIReviewUpdateResponse {
+  cluster_id: string
+  ai_review_status: 'unreviewed' | 'good' | 'weak' | 'misleading' | 'hallucinated'
+  ai_review_note?: string | null
+  ai_reviewed_at?: string | null
 }
 
 export interface BackendHomePageData {

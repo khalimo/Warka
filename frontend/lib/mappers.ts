@@ -1,4 +1,6 @@
 import {
+  AIReviewUpdateResponse,
+  BackendAIReviewUpdateResponse,
   BackendCluster,
   BackendHomePageData,
   BackendSource,
@@ -92,6 +94,9 @@ export function mapCluster(cluster: BackendCluster): CompareCluster {
     aiGeneratedAt: cluster.ai_generated_at || undefined,
     aiModelUsed: cluster.ai_model_used || undefined,
     hasAISynthesis: cluster.has_ai_synthesis || false,
+    aiReviewStatus: cluster.ai_review_status || 'unreviewed',
+    aiReviewNote: cluster.ai_review_note || undefined,
+    aiReviewedAt: cluster.ai_reviewed_at || undefined,
     createdAt: cluster.created_at || undefined,
     updatedAt: cluster.updated_at || undefined,
     storyCount: cluster.story_count || undefined,
@@ -130,5 +135,16 @@ export function mapPaginatedClusters(
     total: response.total,
     limit: response.limit,
     offset: response.offset,
+  }
+}
+
+export function mapAIReviewUpdateResponse(
+  response: BackendAIReviewUpdateResponse
+): AIReviewUpdateResponse {
+  return {
+    clusterId: response.cluster_id,
+    aiReviewStatus: response.ai_review_status,
+    aiReviewNote: response.ai_review_note || undefined,
+    aiReviewedAt: response.ai_reviewed_at || undefined,
   }
 }

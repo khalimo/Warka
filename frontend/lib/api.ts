@@ -1,4 +1,8 @@
 import {
+  AIReviewUpdatePayload,
+  AIReviewUpdateResponse,
+  BackendAIReviewUpdatePayload,
+  BackendAIReviewUpdateResponse,
   BackendCluster,
   BackendHomePageData,
   BackendSource,
@@ -10,6 +14,7 @@ import {
   Story,
 } from './types'
 import {
+  mapAIReviewUpdateResponse,
   mapCluster,
   mapHomePageData,
   mapPaginatedClusters,
@@ -120,6 +125,37 @@ class ApiClient {
       return (await response.json()) as { id?: string; status?: string }
     } catch (error) {
       console.error('Ingestion failed:', error)
+      return null
+    }
+  }
+
+  async updateClusterAIReview(
+    clusterId: string,
+    payload: AIReviewUpdatePayload
+  ): Promise<AIReviewUpdateResponse | null> {
+    if (!API_BASE_URL) {
+      return null
+    }
+    const body: BackendAIReviewUpdatePayload = {
+      review_status: payload.reviewStatus,
+      review_note: payload.reviewNote,
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/internal/clusters/${clusterId}/ai-review`, {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+      if (!response.ok) {
+        return null
+      }
+      const result = (await response.json()) as BackendAIReviewUpdateResponse
+      return mapAIReviewUpdateResponse(result)
+    } catch (error) {
+      console.error('Updating AI review failed:', error)
       return null
     }
   }

@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Generic, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic import field_validator
 
 
 class Source(BaseModel):
@@ -75,6 +76,9 @@ class Cluster(BaseModel):
     ai_generated_at: Optional[datetime] = None
     ai_model_used: Optional[str] = None
     has_ai_synthesis: bool = False
+    ai_review_status: Optional[str] = None
+    ai_review_note: Optional[str] = None
+    ai_reviewed_at: Optional[datetime] = None
     story_count: int = 0
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -122,3 +126,34 @@ class IngestRun(BaseModel):
     details_json: dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AIReviewUpdateRequest(BaseModel):
+    review_status: str
+    review_note: Optional[str] = None
+
+    @field_validator("review_status")
+    @classmethod
+    def validate_review_status(cls, value: str) -> str:
+        normalized = (value or "").strip().lower()
+        allowed = {"unreviewed", "good", "weak", "misleading", "hallucinated"}
+        if normalized not in allowed:
+            raise ValueError("Invalid review status")
+        return normalized
+
+    @field_validator("review_note", mode="before")
+    @classmethod
+    def normalize_review_note(cls, value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        cleaned = " ".join(str(value).split()).strip()
+        if not cleaned:
+            return None
+        return cleaned[:500]
+
+
+class AIReviewUpdateResponse(BaseModel):
+    cluster_id: str
+    ai_review_status: str
+    ai_review_note: Optional[str] = None
+    ai_reviewed_at: Optional[datetime] = None
