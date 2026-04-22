@@ -55,6 +55,13 @@ class Cluster(Base):
     neutral_summary: Mapped[Optional[str]] = mapped_column(Text)
     key_themes: Mapped[list[str]] = mapped_column(JsonType, default=list)
     consensus_level: Mapped[Optional[str]] = mapped_column(String)
+    ai_neutral_summary: Mapped[Optional[str]] = mapped_column(Text)
+    ai_coverage_differences: Mapped[Optional[str]] = mapped_column(Text)
+    ai_consensus_level: Mapped[Optional[str]] = mapped_column(String)
+    ai_key_themes: Mapped[Optional[str]] = mapped_column(Text)
+    ai_generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    ai_model_used: Mapped[Optional[str]] = mapped_column(String)
+    has_ai_synthesis: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     story_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[Optional[datetime]] = mapped_column(

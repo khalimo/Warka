@@ -14,6 +14,7 @@ Production FastAPI backend for Warka, a Somali news aggregation and comparison p
 - Deterministic V1 clustering with Jaccard similarity
 - Source registry with verification-first enablement
 - Source health monitoring and CLI health report
+- Optional AI synthesis for cluster-level consensus summaries
 
 ## Backend Structure
 
@@ -74,6 +75,9 @@ Required environment variables:
 DATABASE_URL
 ENABLE_OPENAI=false
 ENABLE_AI_SYNTHESIS=false
+AI_MODEL=gpt-4o-mini
+AI_TEMPERATURE=0.3
+AI_MAX_TOKENS=500
 CORS_ORIGINS=["https://your-frontend-domain.com","http://localhost:3000"]
 SOURCE_VALIDATION_ON_STARTUP=true
 VERIFICATION_TIMEOUT=15
@@ -92,6 +96,8 @@ Optional:
 ```text
 OPENAI_API_KEY
 ```
+
+AI synthesis stays fully optional. If `ENABLE_AI_SYNTHESIS=false`, no model calls are made and the rest of the backend behaves exactly as before.
 
 For a split Render/Vercel deployment, set `CORS_ORIGINS` to include both your production frontend URL and local development URL. Example:
 
@@ -115,6 +121,21 @@ Review source health:
 ```bash
 cd backend
 python -m app.cli.source_health_report
+```
+
+Run manual AI synthesis for recent clusters:
+
+```bash
+cd backend
+python -m app.cli.run_ai_synthesis --hours 48 --limit 20
+```
+
+Useful flags:
+
+```bash
+python -m app.cli.run_ai_synthesis --cluster-id <cluster-id>
+python -m app.cli.run_ai_synthesis --hours 48 --limit 20 --dry-run
+python -m app.cli.run_ai_synthesis --hours 48 --limit 20 --force
 ```
 
 Verified working feeds in the current pass:
@@ -226,5 +247,6 @@ Set up a cron job locally:
 - The source registry tracks validation status, last validation time, response time, and consecutive failures. Sources auto-disable after three ingestion failures.
 - If feed content is too thin or an image is missing, the ingestion pipeline now attempts a lightweight article-page enrichment pass before falling back to category placeholder artwork.
 - Scraper support exists as a disabled scaffold but no scraper is enabled by default in this pass.
+- AI synthesis is stored in separate `ai_*` fields on clusters and is only generated through the manual CLI in this pass.
 - Search, auth, newsletter APIs, and advanced clustering are intentionally excluded for this backend version.
 - The backend assumes migrations have been applied before normal startup.

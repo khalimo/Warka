@@ -42,6 +42,30 @@ class ClusterRepository:
         stmt = self._base_select().where(models.Cluster.id == cluster_id)
         return self.db.scalars(stmt).unique().first()
 
+    def list_recent_for_synthesis(
+        self,
+        cutoff: datetime,
+        limit: int,
+        include_completed: bool = False,
+    ) -> list[models.Cluster]:
+        stmt = (
+            self._base_select()
+            .join(models.Cluster.stories)
+            .where(models.Story.published_at >= cutoff)
+            .distinct()
+            .order_by(models.Cluster.created_at.desc())
+            .limit(limit)
+        )
+        if not include_completed:
+            stmt = stmt.where(models.Cluster.ai_generated_at.is_(None))
+        return list(self.db.scalars(stmt).unique())
+
+    def save(self, cluster: models.Cluster) -> models.Cluster:
+        self.db.add(cluster)
+        self.db.commit()
+        self.db.refresh(cluster)
+        return cluster
+
     def add(self, cluster: models.Cluster) -> models.Cluster:
         self.db.add(cluster)
         self.db.flush()
