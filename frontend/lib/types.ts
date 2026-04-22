@@ -46,6 +46,16 @@ export interface CompareCluster {
   neutralSummary: string
   keyThemes: string[]
   consensusLevel: 'high' | 'medium' | 'low'
+  aiNeutralSummary?: string
+  aiCoverageDifferences?: string
+  aiConsensusLevel?: 'high' | 'medium' | 'low'
+  aiKeyThemes?: string[]
+  aiGeneratedAt?: string
+  aiModelUsed?: string
+  hasAISynthesis?: boolean
+  createdAt?: string
+  updatedAt?: string
+  storyCount?: number
 }
 
 export interface HomePageData {
@@ -111,6 +121,16 @@ export interface BackendCluster {
   neutral_summary?: string | null
   key_themes?: string[] | null
   consensus_level: 'high' | 'medium' | 'low'
+  ai_neutral_summary?: string | null
+  ai_coverage_differences?: string | null
+  ai_consensus_level?: 'high' | 'medium' | 'low' | null
+  ai_key_themes?: string[] | null
+  ai_generated_at?: string | null
+  ai_model_used?: string | null
+  has_ai_synthesis?: boolean
+  created_at?: string
+  updated_at?: string | null
+  story_count?: number
   stories: BackendStory[]
   sources: BackendSource[]
 }

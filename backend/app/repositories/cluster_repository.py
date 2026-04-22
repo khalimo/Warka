@@ -18,11 +18,22 @@ class ClusterRepository:
             selectinload(models.Cluster.stories).selectinload(models.Story.source)
         )
 
-    def count_all(self) -> int:
-        return int(self.db.scalar(select(func.count(models.Cluster.id))) or 0)
+    def count_all(self, has_ai_synthesis: Optional[bool] = None) -> int:
+        stmt = select(func.count(models.Cluster.id))
+        if has_ai_synthesis is not None:
+            stmt = stmt.where(models.Cluster.has_ai_synthesis.is_(has_ai_synthesis))
+        return int(self.db.scalar(stmt) or 0)
 
-    def list_paginated(self, limit: int, offset: int) -> list[models.Cluster]:
-        stmt = self._base_select().order_by(models.Cluster.created_at.desc()).offset(offset).limit(limit)
+    def list_paginated(
+        self,
+        limit: int,
+        offset: int,
+        has_ai_synthesis: Optional[bool] = None,
+    ) -> list[models.Cluster]:
+        stmt = self._base_select().order_by(models.Cluster.created_at.desc())
+        if has_ai_synthesis is not None:
+            stmt = stmt.where(models.Cluster.has_ai_synthesis.is_(has_ai_synthesis))
+        stmt = stmt.offset(offset).limit(limit)
         return list(self.db.scalars(stmt).unique())
 
     def latest_cluster(self) -> Optional[models.Cluster]:
