@@ -15,7 +15,7 @@ export default async function ComparePage() {
 
   if (!result || result.items.length === 0) {
     return (
-      <div className="container-custom py-12">
+      <div className="container-custom py-16 md:py-20">
         <EmptyState
           title="No comparisons yet"
           message="Clusters will appear here once stories are ingested and grouped."
@@ -25,19 +25,29 @@ export default async function ComparePage() {
   }
 
   return (
-    <div className="container-custom py-12">
-      <div className="mx-auto max-w-4xl">
-        <SectionHeader
-          title="Compare Coverage"
-          subtitle="See how different outlets cover the same story, what they agree on, and where their emphasis shifts."
-          centered
-        />
-        <div className="space-y-8">
+    <div className="bg-paper dark:bg-[#141b1d]">
+      <section className="border-b news-divider">
+        <div className="container-custom py-10 sm:py-12 md:py-16 xl:py-20">
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-5 flex justify-center sm:mb-6">
+              <span className="signature-chip">Compare Coverage</span>
+            </div>
+            <SectionHeader
+              title="Compare Coverage"
+              subtitle="See how different outlets cover the same story, what they agree on, and where their emphasis shifts."
+              centered
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="container-custom py-10 sm:py-12 md:py-16 xl:py-20">
+        <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8 md:space-y-10">
           {result.items.map((cluster) => (
             <CompareClusterCard key={cluster.id} cluster={cluster} />
           ))}
         </div>
-      </div>
+      </section>
     </div>
   )
 }

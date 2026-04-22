@@ -19,11 +19,11 @@ export default async function HomePage() {
 
   if (!homeData) {
     return (
-      <div className="container-custom py-12">
+      <div className="container-custom py-16 md:py-20">
         <LoadingSkeleton variant="hero" />
-        <div className="mt-10 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-          <h1 className="mb-2 text-2xl font-bold">We couldn&apos;t load the front page just now</h1>
-          <p className="text-gray-600">
+        <div className="mt-12 rounded-editorial border border-[#d8cab7] bg-white/80 p-8 text-center shadow-lift dark:border-white/10 dark:bg-[#182124]">
+          <h1 className="mb-3 text-3xl font-bold md:text-4xl">We couldn&apos;t load the front page just now</h1>
+          <p className="mx-auto max-w-2xl text-base leading-7 text-ink/70 dark:text-[#d8d2c9]">
             The latest stories are temporarily unavailable. Please try again in a moment.
           </p>
         </div>
@@ -31,44 +31,103 @@ export default async function HomePage() {
     )
   }
 
+  const latestWithoutHero = homeData.latestStories.filter((story) => story.id !== homeData.heroStory.id)
+  const editorsPicks = latestWithoutHero.slice(0, 3)
+  const breakingStories = latestWithoutHero.filter((story) => story.isBreaking).slice(0, 3)
+  const breakingRail = (breakingStories.length > 0 ? breakingStories : latestWithoutHero.slice(3, 6)).slice(0, 3)
+
   return (
-    <div className="bg-white">
-      <section className="border-b border-gray-200">
-        <div className="container-custom py-8 md:py-12">
-          <HeroStoryCard story={homeData.heroStory} />
+    <div className="bg-paper dark:bg-[#141b1d]">
+      <section className="border-b news-divider">
+        <div className="container-custom py-8 md:py-14 xl:py-16">
+          <div className="mb-8 flex flex-col gap-4 border-b news-divider pb-6 md:flex-row md:items-end md:justify-between">
+            <div className="space-y-3">
+              <div className="eyebrow">Warka Front Page</div>
+              <h1 className="max-w-4xl text-[2.35rem] font-bold leading-[0.96] sm:text-5xl md:text-6xl xl:text-7xl">
+                Calm, distinctive coverage of Somalia and the world around it.
+              </h1>
+            </div>
+            <p className="max-w-md text-sm leading-6 text-ink/70 dark:text-[#d8d2c9] sm:leading-7">
+              The lead story takes the floor, supporting reporting stays easy to scan, and comparison stays close at hand.
+            </p>
+          </div>
+
+          <div className="grid gap-8 lg:gap-10 xl:grid-cols-[minmax(0,1.45fr)_21rem]">
+            <div className="space-y-8 md:space-y-10">
+              <div className="grid gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1.12fr)_18rem] xl:gap-10">
+                <HeroStoryCard story={homeData.heroStory} />
+
+                <aside className="space-y-4 border-t news-divider pt-5 lg:space-y-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                  <div className="flex items-center justify-between">
+                    <span className="eyebrow">Editor&apos;s Picks</span>
+                    <span className="text-xs uppercase tracking-[0.16em] text-ink/45 dark:text-[#b3aea6]">
+                      Curated
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {editorsPicks.map((story) => (
+                      <StoryCardCompact key={story.id} story={story} />
+                    ))}
+                  </div>
+                </aside>
+              </div>
+
+              <div className="grid gap-5 sm:gap-6 md:grid-cols-3 xl:gap-8">
+                {homeData.secondaryStories.map((story) => (
+                  <StoryCardLarge key={story.id} story={story} />
+                ))}
+              </div>
+            </div>
+
+            <aside className="space-y-5 border-t news-divider pt-6 xl:space-y-6 xl:border-l xl:pl-8 xl:pt-0">
+              <div className="section-surface p-5 md:p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="eyebrow">Breaking</span>
+                  <span className="signature-chip">Live monitor</span>
+                </div>
+                <div className="space-y-4">
+                  {breakingRail.map((story, index) => (
+                    <div
+                      key={story.id}
+                      className={`pb-4 ${index < breakingRail.length - 1 ? 'border-b news-divider' : ''}`}
+                    >
+                      <StoryCardCompact story={story} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {homeData.comparePreview ? (
+                <div className="space-y-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="eyebrow">Signature feature</span>
+                    <span className="signature-chip">Compare Coverage</span>
+                  </div>
+                  <CompareClusterCard cluster={homeData.comparePreview} />
+                </div>
+              ) : null}
+            </aside>
+          </div>
         </div>
       </section>
 
-      <section className="container-custom py-12">
+      <section className="container-custom py-14 md:py-16 xl:py-20">
         <SectionHeader
           title="Top Stories"
           subtitle="The biggest developments shaping Somalia and the wider region."
         />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {homeData.secondaryStories.map((story) => (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:gap-8">
+          {latestWithoutHero.slice(0, 3).map((story) => (
             <StoryCardLarge key={story.id} story={story} />
           ))}
         </div>
       </section>
 
-      {homeData.comparePreview ? (
-        <section className="border-y border-gray-200 bg-gray-50 py-16">
-          <div className="container-custom">
-            <SectionHeader
-              title="Compare Coverage"
-              subtitle="See where sources align, where emphasis shifts, and how a story is unfolding."
-              centered
-            />
-            <CompareClusterCard cluster={homeData.comparePreview} />
-          </div>
-        </section>
-      ) : null}
-
-      <div className="container-custom py-12">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+      <div className="container-custom py-12 md:py-16 xl:py-20">
+        <div className="grid grid-cols-1 gap-10 md:gap-12 lg:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.8fr)] xl:gap-14">
           <div className="lg:col-span-2">
             <SectionHeader title="Latest Stories" subtitle="Fresh reporting from our active sources." />
-            <div className="space-y-1">
+            <div className="section-surface divide-y divide-[#dfd4c3] overflow-hidden dark:divide-white/10">
               {homeData.latestStories.slice(0, 10).map((story) => (
                 <StoryCardCompact key={story.id} story={story} />
               ))}
@@ -90,17 +149,19 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <section className="container-custom pb-16">
-        <SectionHeader title="World" subtitle="Global developments with relevance to Somali readers." />
-        {homeData.worldStories.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {homeData.worldStories.map((story) => (
-              <StoryCardLarge key={story.id} story={story} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="No world stories yet" message="Global coverage will appear here as stories are ingested." />
-        )}
+      <section className="border-t news-divider bg-white/40 py-12 dark:bg-[#182124]/50 md:py-16 xl:py-20">
+        <div className="container-custom">
+          <SectionHeader title="World" subtitle="Global developments with relevance to Somali readers." />
+          {homeData.worldStories.length > 0 ? (
+            <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 xl:gap-8">
+              {homeData.worldStories.map((story) => (
+                <StoryCardLarge key={story.id} story={story} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No world stories yet" message="Global coverage will appear here as stories are ingested." />
+          )}
+        </div>
       </section>
     </div>
   )

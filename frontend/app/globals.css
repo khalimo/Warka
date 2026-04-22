@@ -5,10 +5,15 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-white text-gray-900 antialiased;
+    @apply bg-paper text-ink antialiased selection:bg-primary-200 selection:text-ink dark:bg-[#141b1d] dark:text-[#f4efe7];
   }
 
   h1,
@@ -17,24 +22,59 @@
   h4,
   h5,
   h6 {
-    @apply font-serif tracking-tight;
+    @apply font-serif tracking-tight text-ink dark:text-[#fbf7f0];
   }
 
   a {
     @apply outline-none;
   }
+
+  *:focus-visible {
+    @apply rounded-[2px] outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-paper dark:ring-offset-[#141b1d];
+  }
+
+  img {
+    @apply bg-stone-100 dark:bg-[#202a2d];
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
   .container-custom {
-    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+    @apply mx-auto max-w-[92rem] px-4 sm:px-6 lg:px-10;
   }
 
   .section-surface {
-    @apply rounded-lg border border-gray-200 bg-white shadow-sm;
+    @apply rounded-editorial border border-[#dfd4c3] bg-white/90 shadow-lift dark:border-white/10 dark:bg-[#182124];
   }
 
   .eyebrow {
-    @apply text-xs font-semibold uppercase tracking-[0.12em] text-primary-700;
+    @apply text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-primary-600 dark:text-primary-300;
+  }
+
+  .editorial-link {
+    @apply transition-all duration-300 ease-editorial;
+  }
+
+  .news-divider {
+    @apply border-[#d8cab7] dark:border-white/10;
+  }
+
+  .signature-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50/80 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-primary-700 dark:border-primary-900/60 dark:bg-primary-900/20 dark:text-primary-200;
   }
 }
