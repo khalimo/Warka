@@ -18,10 +18,21 @@ class ClusterRepository:
             selectinload(models.Cluster.stories).selectinload(models.Story.source)
         )
 
-    def count_all(self, has_ai_synthesis: Optional[bool] = None) -> int:
+    def count_all(
+        self,
+        has_ai_synthesis: Optional[bool] = None,
+        ai_review_status: Optional[str] = None,
+    ) -> int:
         stmt = select(func.count(models.Cluster.id))
         if has_ai_synthesis is not None:
             stmt = stmt.where(models.Cluster.has_ai_synthesis.is_(has_ai_synthesis))
+        if ai_review_status:
+            if ai_review_status == "unreviewed":
+                stmt = stmt.where(
+                    (models.Cluster.ai_review_status.is_(None)) | (models.Cluster.ai_review_status == "unreviewed")
+                )
+            else:
+                stmt = stmt.where(models.Cluster.ai_review_status == ai_review_status)
         return int(self.db.scalar(stmt) or 0)
 
     def list_paginated(
@@ -29,10 +40,18 @@ class ClusterRepository:
         limit: int,
         offset: int,
         has_ai_synthesis: Optional[bool] = None,
+        ai_review_status: Optional[str] = None,
     ) -> list[models.Cluster]:
         stmt = self._base_select().order_by(models.Cluster.created_at.desc())
         if has_ai_synthesis is not None:
             stmt = stmt.where(models.Cluster.has_ai_synthesis.is_(has_ai_synthesis))
+        if ai_review_status:
+            if ai_review_status == "unreviewed":
+                stmt = stmt.where(
+                    (models.Cluster.ai_review_status.is_(None)) | (models.Cluster.ai_review_status == "unreviewed")
+                )
+            else:
+                stmt = stmt.where(models.Cluster.ai_review_status == ai_review_status)
         stmt = stmt.offset(offset).limit(limit)
         return list(self.db.scalars(stmt).unique())
 

@@ -83,7 +83,8 @@ class ApiClient {
   async getCompareClusters(
     limit = 10,
     offset = 0,
-    hasAISynthesis?: boolean
+    hasAISynthesis?: boolean,
+    aiReviewStatus?: string
   ): Promise<PaginatedResponse<CompareCluster> | null> {
     const params = new URLSearchParams({
       limit: String(limit),
@@ -91,6 +92,9 @@ class ApiClient {
     })
     if (typeof hasAISynthesis === 'boolean') {
       params.set('has_ai_synthesis', String(hasAISynthesis))
+    }
+    if (aiReviewStatus) {
+      params.set('ai_review_status', aiReviewStatus)
     }
     const result = await this.fetchJSON<PaginatedResponse<BackendCluster>>(
       `/api/clusters?${params.toString()}`

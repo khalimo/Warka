@@ -14,19 +14,34 @@ from app.utils.dates import utc_now
 
 router = APIRouter(prefix="/api", tags=["clusters"])
 
+ALLOWED_AI_REVIEW_STATUSES = {"unreviewed", "good", "weak", "misleading", "hallucinated"}
+
 
 @router.get("/clusters", response_model=PaginatedResponse[Cluster])
 def get_clusters(
     limit: int = Query(default=10, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     has_ai_synthesis: Optional[bool] = Query(default=None),
+    ai_review_status: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[Cluster]:
     repository = ClusterRepository(db)
-    clusters = repository.list_paginated(limit=limit, offset=offset, has_ai_synthesis=has_ai_synthesis)
+    normalized_review_status = (ai_review_status or "").strip().lower() or None
+    if normalized_review_status not in ALLOWED_AI_REVIEW_STATUSES:
+        normalized_review_status = None
+
+    clusters = repository.list_paginated(
+        limit=limit,
+        offset=offset,
+        has_ai_synthesis=has_ai_synthesis,
+        ai_review_status=normalized_review_status,
+    )
     return PaginatedResponse[Cluster](
         items=[map_cluster_to_response(cluster) for cluster in clusters],
-        total=repository.count_all(has_ai_synthesis=has_ai_synthesis),
+        total=repository.count_all(
+            has_ai_synthesis=has_ai_synthesis,
+            ai_review_status=normalized_review_status,
+        ),
         limit=limit,
         offset=offset,
     )

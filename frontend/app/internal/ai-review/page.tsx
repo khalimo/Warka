@@ -16,7 +16,18 @@ export const dynamic = 'force-dynamic'
 type PageProps = {
   searchParams?: {
     limit?: string
+    status?: string
   }
+}
+
+const REVIEW_FILTERS = ['all', 'unreviewed', 'good', 'weak', 'misleading', 'hallucinated'] as const
+
+function normalizeStatus(rawStatus?: string): (typeof REVIEW_FILTERS)[number] {
+  const normalized = (rawStatus || '').trim().toLowerCase()
+  if (REVIEW_FILTERS.includes(normalized as (typeof REVIEW_FILTERS)[number])) {
+    return normalized as (typeof REVIEW_FILTERS)[number]
+  }
+  return 'unreviewed'
 }
 
 function normalizeLimit(rawLimit?: string): number {
@@ -56,7 +67,13 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
   }
 
   const limit = normalizeLimit(searchParams?.limit)
-  const result = await apiClient.getCompareClusters(limit, 0, true)
+  const statusFilter = normalizeStatus(searchParams?.status)
+  const result = await apiClient.getCompareClusters(
+    limit,
+    0,
+    true,
+    statusFilter === 'all' ? undefined : statusFilter
+  )
 
   return (
     <div className="container-custom py-12">
@@ -76,7 +93,7 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
             return (
               <a
                 key={option}
-                href={`/internal/ai-review?limit=${option}`}
+                href={`/internal/ai-review?limit=${option}&status=${statusFilter}`}
                 className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
                   isActive
                     ? 'border-gray-900 bg-gray-900 text-white'
@@ -84,6 +101,25 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
                 }`}
               >
                 Show {option}
+              </a>
+            )
+          })}
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          {REVIEW_FILTERS.map((option) => {
+            const isActive = option === statusFilter
+            return (
+              <a
+                key={option}
+                href={`/internal/ai-review?limit=${limit}&status=${option}`}
+                className={`rounded-full border px-4 py-2 text-sm font-medium capitalize transition ${
+                  isActive
+                    ? 'border-blue-700 bg-blue-700 text-white'
+                    : 'border-blue-200 bg-blue-50 text-blue-800 hover:border-blue-300'
+                }`}
+              >
+                {option}
               </a>
             )
           })}
