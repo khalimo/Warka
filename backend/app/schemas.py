@@ -68,6 +68,13 @@ class Cluster(BaseModel):
     neutral_summary: Optional[str] = None
     key_themes: list[str] = Field(default_factory=list)
     consensus_level: Optional[str] = None
+    ai_neutral_summary: Optional[str] = None
+    ai_coverage_differences: Optional[str] = None
+    ai_consensus_level: Optional[str] = None
+    ai_key_themes: list[str] = Field(default_factory=list)
+    ai_generated_at: Optional[datetime] = None
+    ai_model_used: Optional[str] = None
+    has_ai_synthesis: bool = False
     story_count: int = 0
     created_at: datetime
     updated_at: Optional[datetime] = None

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from app import models, schemas
 
 
@@ -43,6 +45,24 @@ def map_story_to_response(db_story: models.Story) -> schemas.Story:
     )
 
 
+def _coerce_theme_list(raw_value) -> list[str]:
+    if raw_value is None:
+        return []
+    if isinstance(raw_value, list):
+        return [str(item).strip() for item in raw_value if str(item).strip()]
+    if isinstance(raw_value, str):
+        cleaned = raw_value.strip()
+        if not cleaned:
+            return []
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(parsed, list):
+            return [str(item).strip() for item in parsed if str(item).strip()]
+    return []
+
+
 def map_cluster_to_response(db_cluster: models.Cluster) -> schemas.Cluster:
     story_items = [map_story_to_response(story) for story in db_cluster.stories]
     unique_sources: dict[str, schemas.Source] = {}
@@ -57,6 +77,13 @@ def map_cluster_to_response(db_cluster: models.Cluster) -> schemas.Cluster:
         neutral_summary=db_cluster.neutral_summary,
         key_themes=list(db_cluster.key_themes or []),
         consensus_level=db_cluster.consensus_level,
+        ai_neutral_summary=db_cluster.ai_neutral_summary,
+        ai_coverage_differences=db_cluster.ai_coverage_differences,
+        ai_consensus_level=db_cluster.ai_consensus_level,
+        ai_key_themes=_coerce_theme_list(db_cluster.ai_key_themes),
+        ai_generated_at=db_cluster.ai_generated_at,
+        ai_model_used=db_cluster.ai_model_used,
+        has_ai_synthesis=db_cluster.has_ai_synthesis,
         story_count=db_cluster.story_count,
         created_at=db_cluster.created_at,
         updated_at=db_cluster.updated_at,
