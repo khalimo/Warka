@@ -21,7 +21,7 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("ai_generated_at", sa.DateTime(timezone=True), nullable=True))
         batch_op.add_column(sa.Column("ai_model_used", sa.String(), nullable=True))
         batch_op.add_column(
-            sa.Column("has_ai_synthesis", sa.Boolean(), nullable=False, server_default=sa.text("0"))
+            sa.Column("has_ai_synthesis", sa.Boolean(), nullable=False, server_default=sa.text("false"))
         )
 
 
