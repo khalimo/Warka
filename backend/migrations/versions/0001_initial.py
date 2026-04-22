@@ -14,6 +14,8 @@ depends_on = None
 
 
 def upgrade() -> None:
+    json_type = sa.JSON().with_variant(postgresql.JSONB(astext_type=sa.Text()), "postgresql")
+
     op.create_table(
         "sources",
         sa.Column("id", sa.String(), primary_key=True),
@@ -28,8 +30,8 @@ def upgrade() -> None:
         sa.Column("last_success_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_error_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_error_message", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True, server_default=sa.text("now()")),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True, server_default=sa.text("CURRENT_TIMESTAMP")),
     )
 
     op.create_table(
@@ -39,17 +41,17 @@ def upgrade() -> None:
         sa.Column("common_facts", sa.Text(), nullable=True),
         sa.Column("coverage_differences", sa.Text(), nullable=True),
         sa.Column("neutral_summary", sa.Text(), nullable=True),
-        sa.Column("key_themes", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("key_themes", json_type, nullable=False, server_default=sa.text("'[]'")),
         sa.Column("consensus_level", sa.String(), nullable=True),
         sa.Column("story_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True, server_default=sa.text("now()")),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True, server_default=sa.text("CURRENT_TIMESTAMP")),
     )
 
     op.create_table(
         "ingest_runs",
         sa.Column("id", sa.Uuid(), primary_key=True),
-        sa.Column("started_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("started_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("status", sa.String(), nullable=False),
         sa.Column("processed_count", sa.Integer(), nullable=False, server_default="0"),
@@ -57,7 +59,7 @@ def upgrade() -> None:
         sa.Column("updated_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("skipped_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("error_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("details_json", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("details_json", json_type, nullable=False, server_default=sa.text("'{}'")),
     )
     op.create_index("ix_ingest_runs_status", "ingest_runs", ["status"])
 
@@ -74,10 +76,10 @@ def upgrade() -> None:
         sa.Column("canonical_url_hash", sa.String(), nullable=False),
         sa.Column("published_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("fetched_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("fetched_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
         sa.Column("region", sa.String(), nullable=True),
         sa.Column("category", sa.String(), nullable=True),
-        sa.Column("topics", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default=sa.text("'[]'::jsonb")),
+        sa.Column("topics", json_type, nullable=False, server_default=sa.text("'[]'")),
         sa.Column("image_url", sa.String(), nullable=True),
         sa.Column("reading_time", sa.Integer(), nullable=True),
         sa.Column("is_breaking", sa.Boolean(), nullable=False, server_default=sa.text("false")),
@@ -85,7 +87,7 @@ def upgrade() -> None:
         sa.Column("framing_label", sa.String(), nullable=True),
         sa.Column("framing_description", sa.Text(), nullable=True),
         sa.Column("framing_tone", sa.String(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
     )
     op.create_index("ix_stories_slug", "stories", ["slug"], unique=True)
     op.create_index("ix_stories_canonical_url_hash", "stories", ["canonical_url_hash"], unique=True)
@@ -109,4 +111,3 @@ def downgrade() -> None:
     op.drop_table("ingest_runs")
     op.drop_table("clusters")
     op.drop_table("sources")
-

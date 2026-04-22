@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from app.utils.slug import build_story_slug
 from app.utils.text import top_terms
 
@@ -27,7 +29,7 @@ CATEGORY_RULES: list[tuple[str, tuple[str, ...]]] = [
 ]
 
 
-def normalize_region(*, source_category: str | None, title: str, summary: str) -> str:
+def normalize_region(*, source_category: Optional[str], title: str, summary: str) -> str:
     haystack = f"{title} {summary}".lower()
     if any(keyword in haystack for keyword in REGION_KEYWORDS):
         return "somalia"
@@ -55,4 +57,3 @@ def derive_topics(*, title: str, summary: str, category: str) -> list[str]:
 
 def make_story_slug(*, title: str, published_at):
     return build_story_slug(title, published_at)
-

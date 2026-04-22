@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from datetime import timedelta
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -59,7 +60,7 @@ def run_clustering(db: Session) -> dict[str, int]:
 
     for story in unclustered:
         story_tokens = tokenize(f"{story.title} {story.excerpt or ''}")
-        best_cluster: models.Cluster | None = None
+        best_cluster: Optional[models.Cluster] = None
         best_score = 0.0
 
         for cluster in recent_clusters:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -40,11 +41,11 @@ class StoryRepository:
         )
         return list(self.db.scalars(stmt).unique())
 
-    def get_by_slug(self, slug: str) -> models.Story | None:
+    def get_by_slug(self, slug: str) -> Optional[models.Story]:
         stmt = self._base_select().where(models.Story.slug == slug)
         return self.db.scalars(stmt).unique().first()
 
-    def hero_story(self) -> models.Story | None:
+    def hero_story(self) -> Optional[models.Story]:
         stmt = (
             self._base_select()
             .where(models.Story.category.in_(["politics", "security", "diplomacy"]))
@@ -66,7 +67,7 @@ class StoryRepository:
         stmt = self._base_select().order_by(models.Story.published_at.desc()).limit(limit)
         return list(self.db.scalars(stmt).unique())
 
-    def find_existing_by_url_hash(self, url_hash: str) -> models.Story | None:
+    def find_existing_by_url_hash(self, url_hash: str) -> Optional[models.Story]:
         stmt = select(models.Story).where(models.Story.canonical_url_hash == url_hash)
         return self.db.scalars(stmt).first()
 

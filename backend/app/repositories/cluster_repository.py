@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -24,7 +25,7 @@ class ClusterRepository:
         stmt = self._base_select().order_by(models.Cluster.created_at.desc()).offset(offset).limit(limit)
         return list(self.db.scalars(stmt).unique())
 
-    def latest_cluster(self) -> models.Cluster | None:
+    def latest_cluster(self) -> Optional[models.Cluster]:
         stmt = self._base_select().order_by(models.Cluster.created_at.desc()).limit(1)
         return self.db.scalars(stmt).unique().first()
 
@@ -37,7 +38,7 @@ class ClusterRepository:
         )
         return list(self.db.scalars(stmt).unique())
 
-    def get(self, cluster_id: str) -> models.Cluster | None:
+    def get(self, cluster_id: str) -> Optional[models.Cluster]:
         stmt = self._base_select().where(models.Cluster.id == cluster_id)
         return self.db.scalars(stmt).unique().first()
 
@@ -46,4 +47,3 @@ class ClusterRepository:
         self.db.flush()
         self.db.refresh(cluster)
         return cluster
-

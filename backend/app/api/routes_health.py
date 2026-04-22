@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
@@ -30,5 +30,4 @@ def health_check(db: Session = Depends(get_db)) -> HealthCheck:
         "feeds": {"ok": active_sources > 0, "active_sources": active_sources},
     }
     status = "ok" if database_ok else "degraded"
-    return HealthCheck(status=status, timestamp=datetime.now(UTC), checks=checks)
-
+    return HealthCheck(status=status, timestamp=datetime.now(timezone.utc), checks=checks)

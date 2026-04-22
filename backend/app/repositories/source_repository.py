@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -20,7 +21,7 @@ class SourceRepository:
         stmt = select(func.count(models.Source.id)).where(models.Source.is_active.is_(True))
         return int(self.db.scalar(stmt) or 0)
 
-    def get_by_id(self, source_id: str) -> models.Source | None:
+    def get_by_id(self, source_id: str) -> Optional[models.Source]:
         return self.db.get(models.Source, source_id)
 
     def seed_sources(self, seed_items: list[dict[str, str]]) -> None:
@@ -43,4 +44,3 @@ class SourceRepository:
         source.last_error_message = message
         self.db.add(source)
         self.db.commit()
-

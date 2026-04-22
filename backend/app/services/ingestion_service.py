@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -38,7 +38,7 @@ def _entry_content(entry: dict[str, Any]) -> str:
     return _entry_value(entry, "summary") or _entry_value(entry, "description")
 
 
-def _entry_image(entry: dict[str, Any]) -> str | None:
+def _entry_image(entry: dict[str, Any]) -> Optional[str]:
     media_thumbnail = entry.get("media_thumbnail") or []
     if isinstance(media_thumbnail, list):
         for item in media_thumbnail:
@@ -161,4 +161,3 @@ def run_ingestion(db: Session) -> models.IngestRun:
         stats["error_count"] += 1
         details.setdefault("fatal_error", str(exc))
         return run_repo.fail(run, completed_at=utc_now(), stats=stats)
-

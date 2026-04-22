@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -20,18 +20,18 @@ class Source(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    base_url: Mapped[str | None] = mapped_column(String)
-    feed_url: Mapped[str | None] = mapped_column(String)
-    category: Mapped[str | None] = mapped_column(String)
-    description: Mapped[str | None] = mapped_column(Text)
+    base_url: Mapped[Optional[str]] = mapped_column(String)
+    feed_url: Mapped[Optional[str]] = mapped_column(String)
+    category: Mapped[Optional[str]] = mapped_column(String)
+    description: Mapped[Optional[str]] = mapped_column(Text)
     language: Mapped[str] = mapped_column(String, default="so", server_default="so")
     country: Mapped[str] = mapped_column(String, default="SO", server_default="SO")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
-    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_error_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    last_error_message: Mapped[str | None] = mapped_column(Text)
+    last_success_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_error_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_error_message: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime | None] = mapped_column(
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
@@ -43,14 +43,14 @@ class Cluster(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    common_facts: Mapped[str | None] = mapped_column(Text)
-    coverage_differences: Mapped[str | None] = mapped_column(Text)
-    neutral_summary: Mapped[str | None] = mapped_column(Text)
+    common_facts: Mapped[Optional[str]] = mapped_column(Text)
+    coverage_differences: Mapped[Optional[str]] = mapped_column(Text)
+    neutral_summary: Mapped[Optional[str]] = mapped_column(Text)
     key_themes: Mapped[list[str]] = mapped_column(JsonType, default=list)
-    consensus_level: Mapped[str | None] = mapped_column(String)
+    consensus_level: Mapped[Optional[str]] = mapped_column(String)
     story_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime | None] = mapped_column(
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
@@ -63,29 +63,29 @@ class Story(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     slug: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    excerpt: Mapped[str | None] = mapped_column(Text)
-    content_html: Mapped[str | None] = mapped_column(Text)
-    summary: Mapped[str | None] = mapped_column(Text)
+    excerpt: Mapped[Optional[str]] = mapped_column(Text)
+    content_html: Mapped[Optional[str]] = mapped_column(Text)
+    summary: Mapped[Optional[str]] = mapped_column(Text)
     source_id: Mapped[str] = mapped_column(String, ForeignKey("sources.id"), nullable=False, index=True)
     original_url: Mapped[str] = mapped_column(String, nullable=False)
     canonical_url_hash: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    region: Mapped[str | None] = mapped_column(String, index=True)
-    category: Mapped[str | None] = mapped_column(String, index=True)
+    region: Mapped[Optional[str]] = mapped_column(String, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String, index=True)
     topics: Mapped[list[str]] = mapped_column(JsonType, default=list)
-    image_url: Mapped[str | None] = mapped_column(String)
-    reading_time: Mapped[int | None] = mapped_column(Integer)
+    image_url: Mapped[Optional[str]] = mapped_column(String)
+    reading_time: Mapped[Optional[int]] = mapped_column(Integer)
     is_breaking: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
-    cluster_id: Mapped[str | None] = mapped_column(String, ForeignKey("clusters.id"), index=True)
-    framing_label: Mapped[str | None] = mapped_column(String)
-    framing_description: Mapped[str | None] = mapped_column(Text)
-    framing_tone: Mapped[str | None] = mapped_column(String)
+    cluster_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("clusters.id"), index=True)
+    framing_label: Mapped[Optional[str]] = mapped_column(String)
+    framing_description: Mapped[Optional[str]] = mapped_column(Text)
+    framing_tone: Mapped[Optional[str]] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     source: Mapped[Source] = relationship(back_populates="stories")
-    cluster: Mapped[Cluster | None] = relationship(back_populates="stories")
+    cluster: Mapped[Optional[Cluster]] = relationship(back_populates="stories")
 
 
 class IngestRun(Base):
@@ -93,7 +93,7 @@ class IngestRun(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String, nullable=False, index=True)
     processed_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     inserted_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
