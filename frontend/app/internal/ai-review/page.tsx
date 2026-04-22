@@ -21,6 +21,7 @@ type PageProps = {
 }
 
 const REVIEW_FILTERS = ['all', 'unreviewed', 'good', 'weak', 'misleading', 'hallucinated'] as const
+const SUMMARY_FILTERS = ['unreviewed', 'good', 'weak', 'misleading', 'hallucinated'] as const
 
 function normalizeStatus(rawStatus?: string): (typeof REVIEW_FILTERS)[number] {
   const normalized = (rawStatus || '').trim().toLowerCase()
@@ -68,11 +69,26 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
 
   const limit = normalizeLimit(searchParams?.limit)
   const statusFilter = normalizeStatus(searchParams?.status)
-  const result = await apiClient.getCompareClusters(
-    limit,
-    0,
-    true,
-    statusFilter === 'all' ? undefined : statusFilter
+  const [result, ...summaryResponses] = await Promise.all([
+    apiClient.getCompareClusters(limit, 0, true, statusFilter === 'all' ? undefined : statusFilter),
+    ...SUMMARY_FILTERS.map((status) => apiClient.getCompareClusters(1, 0, true, status)),
+  ])
+
+  const summaryCounts = SUMMARY_FILTERS.reduce(
+    (accumulator, status, index) => {
+      const count = summaryResponses[index]?.total || 0
+      accumulator[status] = count
+      accumulator.total += count
+      return accumulator
+    },
+    {
+      total: 0,
+      unreviewed: 0,
+      good: 0,
+      weak: 0,
+      misleading: 0,
+      hallucinated: 0,
+    } as Record<(typeof SUMMARY_FILTERS)[number] | 'total', number>
   )
 
   return (
@@ -86,6 +102,35 @@ export default async function InternalAIReviewPage({ searchParams }: PageProps) 
           title="AI Cluster Review"
           subtitle="Manual side-by-side review for the newest AI-enriched clusters."
         />
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          {[
+            { label: 'Unreviewed', value: summaryCounts.unreviewed, filter: 'unreviewed' },
+            { label: 'Good', value: summaryCounts.good, filter: 'good' },
+            { label: 'Weak', value: summaryCounts.weak, filter: 'weak' },
+            { label: 'Misleading', value: summaryCounts.misleading, filter: 'misleading' },
+            { label: 'Hallucinated', value: summaryCounts.hallucinated, filter: 'hallucinated' },
+            { label: 'Total', value: summaryCounts.total, filter: 'all' },
+          ].map((item) => {
+            const isActive = item.filter === statusFilter
+            return (
+              <a
+                key={item.label}
+                href={`/internal/ai-review?limit=${limit}&status=${item.filter}`}
+                className={`rounded-xl border p-4 transition ${
+                  isActive
+                    ? 'border-blue-700 bg-blue-700 text-white'
+                    : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                <div className={`text-xs font-semibold uppercase tracking-wide ${isActive ? 'text-blue-100' : 'text-gray-500'}`}>
+                  {item.label}
+                </div>
+                <div className="mt-2 text-3xl font-semibold">{item.value}</div>
+              </a>
+            )
+          })}
+        </div>
 
         <div className="flex flex-wrap gap-3">
           {[10, 20, 50].map((option) => {

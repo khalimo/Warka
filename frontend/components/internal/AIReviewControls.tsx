@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { apiClient } from '@/lib/api'
 import { AIReviewUpdatePayload, CompareCluster } from '@/lib/types'
@@ -18,6 +19,7 @@ type Props = {
 }
 
 export function AIReviewControls({ cluster }: Props) {
+  const router = useRouter()
   const [reviewStatus, setReviewStatus] = useState<AIReviewUpdatePayload['reviewStatus']>(
     cluster.aiReviewStatus || 'unreviewed'
   )
@@ -53,6 +55,7 @@ export function AIReviewControls({ cluster }: Props) {
     setReviewNote(result.aiReviewNote || '')
     setSavedAt(result.aiReviewedAt || '')
     setMessage('Review saved.')
+    router.refresh()
   }
 
   return (
