@@ -45,13 +45,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="so">
       <body
         className={`${newsreader.variable} ${spaceGrotesk.variable} flex min-h-screen flex-col font-sans`}
       >
         <Providers>
           <SiteHeader />
-          <main className="flex-grow">{children}</main>
+          <main id="main-content" className="flex-grow">
+            {children}
+          </main>
           <SiteFooter />
         </Providers>
       </body>

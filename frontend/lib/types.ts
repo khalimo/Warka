@@ -1,3 +1,5 @@
+import type { AppLanguage } from './i18n'
+
 export interface Source {
   id: string
   name: string
@@ -18,10 +20,16 @@ export interface Framing {
 export interface Story {
   id: string
   slug: string
+  lang: AppLanguage
   title: string
   excerpt: string
   content?: string
   summary?: string
+  translations?: {
+    headline?: Partial<Record<AppLanguage, string>>
+    excerpt?: Partial<Record<AppLanguage, string>>
+    summary?: Partial<Record<AppLanguage, string>>
+  }
   source: Source
   publishedAt: string
   updatedAt?: string

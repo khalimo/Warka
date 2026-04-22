@@ -1,3 +1,5 @@
+'use client'
+
 import { Source } from '@/lib/types'
 
 interface SourceBadgeProps {

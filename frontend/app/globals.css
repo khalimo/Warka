@@ -3,6 +3,32 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.875rem;
+    --fs-base: 1rem;
+    --fs-md: 1.25rem;
+    --fs-lg: 1.563rem;
+    --fs-xl: 1.953rem;
+    --fs-2xl: 2.441rem;
+    --fs-3xl: 3.052rem;
+    --lh-tight: 1.15;
+    --lh-normal: 1.55;
+    --lh-loose: 1.7;
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2rem;
+    --space-xl: 3rem;
+    --bg-body: #faf7f2;
+    --bg-surface: #ffffff;
+    --text-primary: #1c1c1c;
+    --text-secondary: #49443f;
+    --text-muted: #736b63;
+    --accent: #b45309;
+    --border: #dfd4c3;
+  }
+
   html {
     scroll-behavior: smooth;
     color-scheme: light;
@@ -14,6 +40,9 @@
 
   body {
     @apply bg-paper text-ink antialiased selection:bg-primary-200 selection:text-ink dark:bg-[#141b1d] dark:text-[#f4efe7];
+    background: var(--bg-body);
+    color: var(--text-primary);
+    line-height: var(--lh-normal);
   }
 
   h1,
@@ -23,10 +52,15 @@
   h5,
   h6 {
     @apply font-serif tracking-tight text-ink dark:text-[#fbf7f0];
+    text-wrap: balance;
   }
 
   a {
     @apply outline-none;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   *:focus-visible {
@@ -54,6 +88,10 @@
 }
 
 @layer components {
+  .skip-link {
+    @apply absolute left-4 top-4 z-[70] -translate-y-24 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform duration-200 ease-editorial focus:translate-y-0 dark:bg-[#f4efe7] dark:text-[#142024];
+  }
+
   .container-custom {
     @apply mx-auto max-w-[92rem] px-4 sm:px-6 lg:px-10;
   }

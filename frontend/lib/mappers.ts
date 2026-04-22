@@ -11,6 +11,7 @@ import {
   Source,
   Story,
 } from './types'
+import { AppLanguage } from './i18n'
 
 function getCategoryImage(category?: string | null): string {
   const placeholders: Record<string, string> = {
@@ -35,6 +36,57 @@ function mapFramingTone(
   return 'neutral'
 }
 
+function detectStoryLanguage(story: BackendStory): AppLanguage {
+  const sourceLanguage = story.source.language?.toLowerCase()
+
+  if (sourceLanguage?.startsWith('so')) {
+    return 'so'
+  }
+
+  if (sourceLanguage?.startsWith('en')) {
+    return 'en'
+  }
+
+  const combinedText = `${story.title} ${story.excerpt || ''} ${story.summary || ''}`.toLowerCase()
+  const somaliSignals = [
+    'ayaa',
+    'soomaaliya',
+    'muqdisho',
+    'wasaaradda',
+    'wasiir',
+    'dadka',
+    'gobolka',
+    'ciidamada',
+    'warbixin',
+    'maanta',
+    'kadib',
+    'qorshe',
+    'cusub',
+  ]
+
+  const englishSignals = [
+    'the ',
+    'somalia',
+    'government',
+    'minister',
+    'report',
+    'president',
+    'world',
+    'after',
+    'security',
+    'economy',
+  ]
+
+  const somaliMatches = somaliSignals.filter((signal) => combinedText.includes(signal)).length
+  const englishMatches = englishSignals.filter((signal) => combinedText.includes(signal)).length
+
+  if (somaliMatches > englishMatches) {
+    return 'so'
+  }
+
+  return 'en'
+}
+
 export function mapSource(source: BackendSource): Source {
   return {
     id: source.id,
@@ -51,6 +103,7 @@ export function mapStory(story: BackendStory): Story {
   return {
     id: story.id,
     slug: story.slug,
+    lang: detectStoryLanguage(story),
     title: story.title,
     excerpt: story.excerpt || story.summary || '',
     content: story.content_html || undefined,
