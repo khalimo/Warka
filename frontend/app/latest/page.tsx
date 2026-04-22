@@ -9,6 +9,8 @@ export const metadata = {
   description: 'The latest reporting from Warka across Somalia and the wider world.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function LatestPage() {
   const result = await apiClient.getLatestStories(50, 0)
 

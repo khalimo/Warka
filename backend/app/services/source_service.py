@@ -1,101 +1,100 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
+from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.repositories.source_repository import SourceRepository
+from app.services.feed_service import FeedFetchError, verify_feed
+from app.services.health_monitor import record_validation_result
+from app.services.source_registry import SOURCE_CANDIDATES, registry_seed_payloads
+from app.utils.dates import utc_now
 
 
 logger = logging.getLogger(__name__)
-
-
-SEED_SOURCES = [
-    {
-        "id": "bbc-somali",
-        "name": "BBC Somali",
-        "base_url": "https://www.bbc.com/somali",
-        "feed_url": "https://feeds.bbci.co.uk/somali/rss.xml",
-        "category": "international",
-        "description": "Somali-language coverage from BBC Somali.",
-        "language": "so",
-        "country": "GB",
-        "is_active": True,
-    },
-    {
-        "id": "hiiraan-online",
-        "name": "Hiiraan Online",
-        "base_url": "https://www.hiiraan.com",
-        "feed_url": "https://www.hiiraan.com/news.xml",
-        "category": "somali_national",
-        "description": "Somali national news from Hiiraan Online.",
-        "language": "en",
-        "country": "SO",
-        "is_active": True,
-    },
-    {
-        "id": "horseed-media",
-        "name": "Horseed Media",
-        "base_url": "https://horseedmedia.net",
-        "feed_url": "https://horseedmedia.net/feed",
-        "category": "somali_national",
-        "description": "Somali news and analysis from Horseed Media.",
-        "language": "so",
-        "country": "SO",
-        "is_active": True,
-    },
-    {
-        "id": "caasimada",
-        "name": "Caasimada",
-        "base_url": "https://www.caasimada.net",
-        "feed_url": "https://www.caasimada.net/feed/",
-        "category": "somali_national",
-        "description": "Somali political and general news from Caasimada.",
-        "language": "so",
-        "country": "SO",
-        "is_active": True,
-    },
-    {
-        "id": "goobjoog",
-        "name": "Goobjoog",
-        "base_url": "https://goobjoog.com",
-        "feed_url": "https://goobjoog.com/feed/",
-        "category": "somali_national",
-        "description": "Somali current affairs and national reporting from Goobjoog.",
-        "language": "en",
-        "country": "SO",
-        "is_active": True,
-    },
-    {
-        "id": "radio-muqdisho",
-        "name": "Radio Muqdisho",
-        "base_url": "https://radiomuqdisho.so",
-        "feed_url": "https://radiomuqdisho.so/feed/",
-        "category": "official",
-        "description": "Public service Somali news coverage from Radio Muqdisho.",
-        "language": "so",
-        "country": "SO",
-        "is_active": True,
-    },
-    {
-        "id": "sonna",
-        "name": "SONNA",
-        "base_url": "https://sonna.so/en",
-        "feed_url": "https://sonna.so/en/feed",
-        "category": "official",
-        "description": "Official Somali National News Agency feed.",
-        "language": "en",
-        "country": "SO",
-        "is_active": True,
-    },
-]
-
-DEACTIVATED_SOURCE_IDS = [
-    "garowe-online",
-]
+settings = get_settings()
 
 
 def seed_initial_sources(db: Session) -> None:
     repository = SourceRepository(db)
-    repository.seed_sources(SEED_SOURCES, deactivate_ids=DEACTIVATED_SOURCE_IDS)
-    logger.info("Source seeding checked for %d canonical feeds", len(SEED_SOURCES))
+    repository.seed_sources(registry_seed_payloads())
+    logger.info("Source seeding checked for %d registered feeds", len(SOURCE_CANDIDATES))
+
+
+def _needs_validation(source) -> bool:
+    if source.last_validated_at is None:
+        return True
+    return source.last_validated_at <= utc_now() - timedelta(hours=settings.health_check_interval_hours)
+
+
+def verify_registered_sources(
+    db: Session,
+    *,
+    manual_reenable: bool,
+    force: bool,
+) -> list[dict[str, Any]]:
+    repository = SourceRepository(db)
+    results: list[dict[str, Any]] = []
+
+    for source in repository.list_all():
+        if not force and not _needs_validation(source):
+            results.append(
+                {
+                    "id": source.id,
+                    "name": source.name,
+                    "status": source.validation_status,
+                    "is_enabled": bool(source.is_active),
+                    "item_count": 0,
+                    "response_time_ms": source.avg_response_time_ms,
+                    "error": "",
+                }
+            )
+            continue
+        try:
+            fetch_result = verify_feed(source)
+            allow_enable = manual_reenable or source.last_validated_at is None
+            if source.validation_status == "disabled" and not manual_reenable:
+                allow_enable = False
+            record_validation_result(
+                db,
+                source,
+                is_valid=True,
+                error=None,
+                response_time_ms=fetch_result.response_time_ms,
+                enable_on_success=allow_enable,
+            )
+            results.append(
+                {
+                    "id": source.id,
+                    "name": source.name,
+                    "status": "verified",
+                    "is_enabled": bool(source.is_active if not allow_enable else True),
+                    "item_count": len(fetch_result.entries),
+                    "response_time_ms": fetch_result.response_time_ms,
+                    "error": "",
+                }
+            )
+        except Exception as exc:
+            record_validation_result(
+                db,
+                source,
+                is_valid=False,
+                error=str(exc),
+                response_time_ms=None,
+                enable_on_success=False,
+            )
+            results.append(
+                {
+                    "id": source.id,
+                    "name": source.name,
+                    "status": source.validation_status or "failed",
+                    "is_enabled": bool(source.is_active),
+                    "item_count": 0,
+                    "response_time_ms": None,
+                    "error": str(exc),
+                }
+            )
+    return results

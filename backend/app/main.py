@@ -11,7 +11,7 @@ from app.api import routes_clusters, routes_health, routes_home, routes_ingest, 
 from app.config import get_settings
 from app.database import SessionLocal
 from app.logging_config import configure_logging
-from app.services.source_service import seed_initial_sources
+from app.services.source_service import seed_initial_sources, verify_registered_sources
 
 
 settings = get_settings()
@@ -24,6 +24,8 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         seed_initial_sources(db)
+        if settings.source_validation_on_startup:
+            verify_registered_sources(db, manual_reenable=False, force=False)
     except Exception:
         logger.exception("Startup source seeding failed")
     finally:
@@ -54,4 +56,3 @@ app.include_router(routes_stories.router)
 app.include_router(routes_clusters.router)
 app.include_router(routes_sources.router)
 app.include_router(routes_ingest.router)
-

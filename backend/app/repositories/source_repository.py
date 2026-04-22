@@ -14,7 +14,15 @@ class SourceRepository:
         self.db = db
 
     def list_active(self) -> list[models.Source]:
-        stmt = select(models.Source).where(models.Source.is_active.is_(True)).order_by(models.Source.name.asc())
+        stmt = (
+            select(models.Source)
+            .where(models.Source.is_active.is_(True))
+            .order_by(models.Source.priority.asc(), models.Source.name.asc())
+        )
+        return list(self.db.scalars(stmt))
+
+    def list_all(self) -> list[models.Source]:
+        stmt = select(models.Source).order_by(models.Source.priority.asc(), models.Source.name.asc())
         return list(self.db.scalars(stmt))
 
     def count_active(self) -> int:
@@ -26,12 +34,24 @@ class SourceRepository:
 
     def seed_sources(
         self,
-        seed_items: list[dict[str, str]],
+        seed_items: list[dict[str, object]],
         deactivate_ids: Optional[Sequence[str]] = None,
     ) -> None:
         existing_sources = {
             source.id: source
             for source in self.db.scalars(select(models.Source))
+        }
+        metadata_fields = {
+            "name",
+            "source_type",
+            "base_url",
+            "feed_url",
+            "category",
+            "description",
+            "language",
+            "country",
+            "priority",
+            "notes",
         }
         for item in seed_items:
             existing = existing_sources.get(item["id"])
@@ -40,7 +60,8 @@ class SourceRepository:
                 continue
 
             for field, value in item.items():
-                setattr(existing, field, value)
+                if field in metadata_fields:
+                    setattr(existing, field, value)
             self.db.add(existing)
 
         for source_id in deactivate_ids or []:
@@ -63,3 +84,9 @@ class SourceRepository:
         source.last_error_message = message
         self.db.add(source)
         self.db.commit()
+
+    def save(self, source: models.Source) -> models.Source:
+        self.db.add(source)
+        self.db.commit()
+        self.db.refresh(source)
+        return source

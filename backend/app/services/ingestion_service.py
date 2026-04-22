@@ -13,8 +13,10 @@ from app.repositories.source_repository import SourceRepository
 from app.repositories.story_repository import StoryRepository
 from app.services.clustering_service import run_clustering
 from app.services.enrichment_service import enrich_story_content, get_category_image
-from app.services.feed_service import FeedFetchError, fetch_feed_entries
+from app.services.feed_service import FeedFetchError, fetch_feed
+from app.services.health_monitor import build_source_health_report, record_source_failure, record_source_success
 from app.services.normalization_service import derive_topics, make_story_slug, normalize_category, normalize_region
+from app.services.scraper_service import scrape_source_entries
 from app.services.sanitization_service import sanitize_html
 from app.utils.dates import parse_datetime, utc_now
 from app.utils.text import canonical_url_hash, estimate_reading_time, strip_html
@@ -82,14 +84,22 @@ def run_ingestion(db: Session) -> models.IngestRun:
             }
             details["sources"][source.id] = source_log
             try:
-                entries = fetch_feed_entries(source)
-                source_repo.mark_success(source, utc_now())
+                fetch_result = fetch_feed(source)
+                entries = fetch_result.entries
+                source_log["response_time_ms"] = fetch_result.response_time_ms
+                record_source_success(db, source, response_time_ms=fetch_result.response_time_ms)
             except Exception as exc:
                 logger.warning("Feed failed for %s: %s", source.name, exc)
-                stats["error_count"] += 1
-                source_log["errors"].append(str(exc))
-                source_repo.mark_error(source, utc_now(), str(exc))
-                continue
+                entries = []
+                if source.base_url:
+                    entries = scrape_source_entries(source.id, source.base_url)
+                if not entries:
+                    stats["error_count"] += 1
+                    source_log["errors"].append(str(exc))
+                    record_source_failure(db, source, error=str(exc))
+                    source_log["status"] = "failed"
+                    continue
+                source_log["status"] = "scraped"
 
             for entry in entries:
                 source_log["processed"] += 1
@@ -166,10 +176,12 @@ def run_ingestion(db: Session) -> models.IngestRun:
 
         cluster_stats = run_clustering(db)
         details["clustering"] = cluster_stats
+        details["source_health"] = build_source_health_report(db)
         logger.info("Ingestion run complete")
         return run_repo.complete(run, completed_at=utc_now(), stats=stats)
     except Exception as exc:
         logger.exception("Ingestion run failed")
         stats["error_count"] += 1
         details.setdefault("fatal_error", str(exc))
+        db.rollback()
         return run_repo.fail(run, completed_at=utc_now(), stats=stats)

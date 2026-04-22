@@ -12,7 +12,8 @@ Production FastAPI backend for Warka, a Somali news aggregation and comparison p
 - Lightweight article enrichment with `beautifulsoup4`
 - HTML sanitization with `bleach`
 - Deterministic V1 clustering with Jaccard similarity
-- Startup-safe seeding for the 5 canonical sources
+- Source registry with verification-first enablement
+- Source health monitoring and CLI health report
 
 ## Backend Structure
 
@@ -72,10 +73,16 @@ Required environment variables:
 ```text
 DATABASE_URL
 ENABLE_OPENAI=false
+ENABLE_AI_SYNTHESIS=false
 CORS_ORIGINS=["https://your-frontend-domain.com","http://localhost:3000"]
+SOURCE_VALIDATION_ON_STARTUP=true
+VERIFICATION_TIMEOUT=15
 FEED_TIMEOUT=30
 FEED_LIMIT_PER_SOURCE=20
 INGEST_LOOKBACK_HOURS=48
+ENABLE_SCRAPERS=false
+SCRAPE_RATE_LIMIT_SECONDS=2
+HEALTH_CHECK_INTERVAL_HOURS=24
 LOG_LEVEL=INFO
 CLUSTER_SIMILARITY_THRESHOLD=0.6
 ```
@@ -92,19 +99,41 @@ For a split Render/Vercel deployment, set `CORS_ORIGINS` to include both your pr
 CORS_ORIGINS=["https://warka-news.vercel.app","http://localhost:3000"]
 ```
 
-## Active Sources
+## Source Verification
 
-The backend now seeds and keeps these active feeds in sync:
+Candidate sources are seeded into the registry, but only verified feeds should remain enabled.
+
+Run verification manually:
+
+```bash
+cd backend
+python -m app.cli.verify_sources
+```
+
+Review source health:
+
+```bash
+cd backend
+python -m app.cli.source_health_report
+```
+
+Verified working feeds in the current pass:
 
 - BBC Somali — `https://feeds.bbci.co.uk/somali/rss.xml`
-- Hiiraan Online — `https://www.hiiraan.com/news.xml`
 - Horseed Media — `https://horseedmedia.net/feed`
 - SONNA — `https://sonna.so/en/feed`
-- Caasimada — `https://www.caasimada.net/feed/`
-- Goobjoog — `https://goobjoog.com/feed/`
+- Caasimada Online — `https://www.caasimada.net/feed/`
+- Goobjoog News — `https://goobjoog.com/feed/`
 - Radio Muqdisho — `https://radiomuqdisho.so/feed/`
+- Hiiraan Online — `https://www.hiiraan.com/news.xml`
+- Puntland Post — `https://puntlandpost.net/feed`
+- Somali Guardian — `https://somaliguardian.com/feed/`
+- Radio Dalsan — `https://radiodalsan.com/feed/`
+- Shabelle Media — `https://shabellemedia.com/feed/`
 
-Legacy Garowe Online is marked inactive because its RSS endpoint currently returns HTTP 500.
+Currently disabled:
+
+- Garowe Online — `https://garoweonline.com/en/rss-feed` (HTTP 500 during verification)
 
 ## API Endpoints
 
@@ -135,6 +164,12 @@ curl -X POST http://localhost:8000/api/ingest
 
 ```bash
 curl http://localhost:8000/api/home
+```
+
+6. Optionally inspect source health:
+
+```bash
+python -m app.cli.source_health_report
 ```
 
 ## Scheduled Ingestion
@@ -188,6 +223,8 @@ Set up a cron job locally:
 ## Notes
 
 - OpenAI enrichment is optional and currently not required for clustering.
+- The source registry tracks validation status, last validation time, response time, and consecutive failures. Sources auto-disable after three ingestion failures.
 - If feed content is too thin or an image is missing, the ingestion pipeline now attempts a lightweight article-page enrichment pass before falling back to category placeholder artwork.
+- Scraper support exists as a disabled scaffold but no scraper is enabled by default in this pass.
 - Search, auth, newsletter APIs, and advanced clustering are intentionally excluded for this backend version.
 - The backend assumes migrations have been applied before normal startup.

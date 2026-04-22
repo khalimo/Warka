@@ -34,6 +34,7 @@ class IngestRunRepository:
         return run
 
     def fail(self, run: models.IngestRun, *, completed_at: datetime, stats: dict[str, Any]) -> models.IngestRun:
+        self.db.rollback()
         run.status = "failed"
         run.completed_at = completed_at
         run.processed_count = int(stats.get("processed_count", 0))
@@ -46,4 +47,3 @@ class IngestRunRepository:
         self.db.commit()
         self.db.refresh(run)
         return run
-

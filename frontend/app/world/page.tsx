@@ -8,6 +8,8 @@ export const metadata = {
   description: 'Global reporting that matters to Somali readers.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function WorldPage() {
   const result = await apiClient.getWorldStories(30, 0)
 

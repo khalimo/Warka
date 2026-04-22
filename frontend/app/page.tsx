@@ -12,6 +12,8 @@ export const metadata = {
   description: 'Independent Somali news with source transparency and multi-source coverage comparison.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const homeData = await apiClient.getHomePage()
 

@@ -12,10 +12,16 @@ class Settings(BaseSettings):
     database_url: str
     openai_api_key: str = ""
     enable_openai: bool = False
+    enable_ai_synthesis: bool = False
+    source_validation_on_startup: bool = True
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     feed_timeout: int = 30
+    verification_timeout: int = 15
     feed_limit_per_source: int = 20
     ingest_lookback_hours: int = 48
+    enable_scrapers: bool = False
+    scrape_rate_limit_seconds: int = 2
+    health_check_interval_hours: int = 24
     log_level: str = "INFO"
     cluster_similarity_threshold: float = 0.6
 
@@ -42,4 +48,3 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
-

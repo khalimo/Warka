@@ -8,6 +8,8 @@ export const metadata = {
   description: 'Essential reporting from across Somalia, gathered in one place.',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function SomaliaPage() {
   const result = await apiClient.getSomaliaStories(30, 0)
 

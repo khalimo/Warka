@@ -13,6 +13,7 @@ interface StoryPageProps {
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: StoryPageProps): Promise<Metadata> {
   const story = await apiClient.getStory(params.slug)
