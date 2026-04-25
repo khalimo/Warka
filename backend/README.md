@@ -85,7 +85,10 @@ FEED_TIMEOUT=30
 FEED_LIMIT_PER_SOURCE=20
 INGEST_LOOKBACK_HOURS=48
 ENABLE_SCRAPERS=false
+SCRAPE_RESPECT_ROBOTS=true
 SCRAPE_RATE_LIMIT_SECONDS=2
+SCRAPE_MAX_ARTICLES_PER_SOURCE=8
+SCRAPE_USER_AGENT=WarkaNewsBot/1.0 (+https://www.warkasta.com)
 HEALTH_CHECK_INTERVAL_HOURS=24
 LOG_LEVEL=INFO
 CLUSTER_SIMILARITY_THRESHOLD=0.6
@@ -98,6 +101,8 @@ OPENAI_API_KEY
 ```
 
 AI synthesis stays fully optional. If `ENABLE_AI_SYNTHESIS=false`, no model calls are made and the rest of the backend behaves exactly as before.
+
+Scraping is also optional. When `ENABLE_SCRAPERS=true`, Warka still reads RSS first, then uses approved source adapters to supplement or recover public article pages. Scrapers respect `robots.txt` by default, rate limit requests per domain, keep attribution to the original URL, and automatically skip sources without an approved adapter.
 
 For a split Render/Vercel deployment, set `CORS_ORIGINS` to include both your production frontend URL and local development URL. Example:
 

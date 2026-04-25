@@ -1,40 +1,54 @@
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any
-from urllib.parse import urlparse
 
 from app.config import get_settings
+from app.services.scrapers.base import SourceScraper
+from app.services.scrapers.universal import UniversalNewsScraper
 
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
-_LAST_REQUEST_BY_DOMAIN: dict[str, float] = {}
 
+_UNIVERSAL = UniversalNewsScraper()
 
-def _respect_rate_limit(url: str) -> None:
-    domain = urlparse(url).netloc
-    if not domain:
-        return
-    last_request = _LAST_REQUEST_BY_DOMAIN.get(domain)
-    if last_request is not None:
-        elapsed = time.time() - last_request
-        if elapsed < settings.scrape_rate_limit_seconds:
-            time.sleep(settings.scrape_rate_limit_seconds - elapsed)
-    _LAST_REQUEST_BY_DOMAIN[domain] = time.time()
+SCRAPER_ADAPTERS: dict[str, SourceScraper] = {
+    "caasimada": _UNIVERSAL,
+    "garowe-online": _UNIVERSAL,
+    "goobjoog": _UNIVERSAL,
+    "hiiraan-online": _UNIVERSAL,
+    "horseed-media": _UNIVERSAL,
+    "puntland-post": _UNIVERSAL,
+    "radio-dalsan": _UNIVERSAL,
+    "radio-muqdisho": _UNIVERSAL,
+    "shabelle-media": _UNIVERSAL,
+    "somali-guardian": _UNIVERSAL,
+    "sonna": _UNIVERSAL,
+}
 
 
 def scrape_source_entries(source_id: str, base_url: str) -> list[dict[str, Any]]:
-    """Scraping is intentionally opt-in and source-specific.
+    """Return public article entries from an approved source scraper.
 
-    This pass keeps the framework in place but does not enable any scraper by default,
-    because the verified RSS sources are more reliable than brittle HTML extraction.
+    Scraping stays disabled unless ENABLE_SCRAPERS=true. RSS/API ingestion remains
+    the first choice; these adapters only supplement or recover public articles
+    where a source is explicitly approved.
     """
 
     if not settings.enable_scrapers:
         return []
 
-    _respect_rate_limit(base_url)
-    logger.info("No scraper configured for source_id=%s; returning no entries", source_id)
-    return []
+    scraper = SCRAPER_ADAPTERS.get(source_id)
+    if scraper is None:
+        logger.info("No scraper configured for source_id=%s; returning no entries", source_id)
+        return []
+
+    try:
+        result = scraper.scrape(base_url, limit=settings.scrape_max_articles_per_source)
+    except Exception as exc:
+        logger.warning("Scraper failed for source_id=%s: %s", source_id, exc)
+        return []
+    if result.errors:
+        logger.info("Scraper completed for source_id=%s with %d warning(s)", source_id, len(result.errors))
+    return result.entries

@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.config import get_settings
 from app.repositories.ingest_run_repository import IngestRunRepository
 from app.repositories.source_repository import SourceRepository
 from app.repositories.story_repository import StoryRepository
@@ -23,6 +24,7 @@ from app.utils.text import canonical_url_hash, estimate_reading_time, strip_html
 
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 def _entry_value(entry: dict[str, Any], key: str) -> str:
@@ -88,6 +90,11 @@ def run_ingestion(db: Session) -> models.IngestRun:
                 entries = fetch_result.entries
                 source_log["response_time_ms"] = fetch_result.response_time_ms
                 record_source_success(db, source, response_time_ms=fetch_result.response_time_ms)
+                if settings.enable_scrapers and source.base_url:
+                    scraped_entries = scrape_source_entries(source.id, source.base_url)
+                    if scraped_entries:
+                        entries = [*entries, *scraped_entries]
+                        source_log["scraped"] = len(scraped_entries)
             except Exception as exc:
                 logger.warning("Feed failed for %s: %s", source.name, exc)
                 entries = []

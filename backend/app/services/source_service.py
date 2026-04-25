@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.repositories.source_repository import SourceRepository
-from app.services.feed_service import FeedFetchError, verify_feed
+from app.services.feed_service import verify_feed
 from app.services.health_monitor import record_validation_result
+from app.services.scraper_service import scrape_source_entries
 from app.services.source_registry import SOURCE_CANDIDATES, registry_seed_payloads
 from app.utils.dates import utc_now
 
@@ -78,6 +79,35 @@ def verify_registered_sources(
                 }
             )
         except Exception as exc:
+            scraper_entries = []
+            if settings.enable_scrapers and source.base_url:
+                scraper_entries = scrape_source_entries(source.id, source.base_url)
+
+            if scraper_entries:
+                allow_enable = manual_reenable or source.last_validated_at is None
+                if source.validation_status == "disabled" and not manual_reenable:
+                    allow_enable = False
+                record_validation_result(
+                    db,
+                    source,
+                    is_valid=True,
+                    error=None,
+                    response_time_ms=None,
+                    enable_on_success=allow_enable,
+                )
+                results.append(
+                    {
+                        "id": source.id,
+                        "name": source.name,
+                        "status": "verified",
+                        "is_enabled": bool(source.is_active if not allow_enable else True),
+                        "item_count": len(scraper_entries),
+                        "response_time_ms": None,
+                        "error": "",
+                    }
+                )
+                continue
+
             record_validation_result(
                 db,
                 source,

@@ -23,7 +23,10 @@ class Settings(BaseSettings):
     feed_limit_per_source: int = 20
     ingest_lookback_hours: int = 48
     enable_scrapers: bool = False
+    scrape_respect_robots: bool = True
     scrape_rate_limit_seconds: int = 2
+    scrape_max_articles_per_source: int = 8
+    scrape_user_agent: str = "WarkaNewsBot/1.0 (+https://www.warkasta.com)"
     health_check_interval_hours: int = 24
     log_level: str = "INFO"
     cluster_similarity_threshold: float = 0.6
