@@ -23,15 +23,12 @@ def get_home_page(db: Session = Depends(get_db)) -> HomePageData:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No stories available")
 
     compare_preview = cluster_repo.latest_cluster()
-    if compare_preview is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No clusters available")
 
     return HomePageData(
         hero_story=map_story_to_response(hero_story),
         secondary_stories=[map_story_to_response(item) for item in story_repo.secondary_stories(hero_story.id, limit=3)],
-        compare_preview=map_cluster_to_response(compare_preview),
+        compare_preview=map_cluster_to_response(compare_preview) if compare_preview is not None else None,
         latest_stories=[map_story_to_response(item) for item in story_repo.latest_for_home(limit=10)],
         somalia_stories=[map_story_to_response(item) for item in story_repo.list_by_region("somalia", limit=6, offset=0)],
         world_stories=[map_story_to_response(item) for item in story_repo.list_by_region("world", limit=4, offset=0)],
     )
-

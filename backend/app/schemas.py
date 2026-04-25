@@ -91,7 +91,7 @@ class Cluster(BaseModel):
 class HomePageData(BaseModel):
     hero_story: Story
     secondary_stories: list[Story]
-    compare_preview: Cluster
+    compare_preview: Optional[Cluster] = None
     latest_stories: list[Story]
     somalia_stories: list[Story]
     world_stories: list[Story]

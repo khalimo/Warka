@@ -1,3 +1,26 @@
+# Warka
+
+Warka is now a split-stack Somali news product:
+
+- `frontend/` is the active public reader site built with Next.js.
+- `backend/` is the active FastAPI JSON API for ingestion, clustering, source health, and story delivery.
+- `app.py` is the older Streamlit product. It is retained as legacy reference code and should not be used for the active public deployment.
+
+For the current production deployment, use:
+
+```text
+frontend/ -> Vercel -> https://www.warkasta.com
+backend/  -> Render -> https://api.warkasta.com
+database  -> Render Postgres
+DNS       -> Cloudflare
+```
+
+See [DEPLOYMENT.md](</Users/tem/Documents/New project/DEPLOYMENT.md>) for the production runbook.
+
+## Legacy Streamlit App
+
+The notes below describe the original Streamlit application. Keep them for historical context until the legacy app is moved or archived.
+
 # Somali News Lens
 
 Somali News Lens is a dual-mode Streamlit product for Somali and international news coverage: a public news front page with built-in source comparison, plus a private newsroom intelligence workspace.

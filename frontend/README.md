@@ -23,8 +23,18 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 Deploy to Vercel or Render Static/Web hosting with:
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=https://your-backend.onrender.com
-NEXT_PUBLIC_SITE_URL=https://your-frontend-domain.com
+NEXT_PUBLIC_API_BASE_URL=https://api.warkasta.com
+NEXT_PUBLIC_SITE_URL=https://www.warkasta.com
+ENABLE_INTERNAL_AI_REVIEW=false
 ```
 
 The frontend expects the backend API contract to remain in snake_case and uses a mapper layer to transform responses for the UI.
+
+For Vercel:
+
+```text
+Root Directory: frontend
+Framework Preset: Next.js
+```
+
+Redeploy after changing environment variables.

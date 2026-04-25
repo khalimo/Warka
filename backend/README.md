@@ -102,7 +102,7 @@ AI synthesis stays fully optional. If `ENABLE_AI_SYNTHESIS=false`, no model call
 For a split Render/Vercel deployment, set `CORS_ORIGINS` to include both your production frontend URL and local development URL. Example:
 
 ```text
-CORS_ORIGINS=["https://warka-news.vercel.app","http://localhost:3000"]
+CORS_ORIGINS=["https://www.warkasta.com","https://warkasta.com","http://localhost:3000"]
 ```
 
 ## Source Verification
@@ -233,6 +233,12 @@ Trigger first ingestion:
 
 ```bash
 curl -X POST http://localhost:8000/api/ingest
+```
+
+Production ingestion:
+
+```bash
+curl -X POST https://api.warkasta.com/api/ingest
 ```
 
 Set up a cron job locally:
