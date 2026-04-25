@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from time import perf_counter
 from collections.abc import Iterable
 from typing import Any, Optional
+from urllib.parse import urljoin
 
+from bs4 import BeautifulSoup
 import feedparser
 import httpx
 
@@ -44,6 +46,12 @@ def _parse_feed_payload(source_name: str, payload: bytes) -> list[dict[str, Any]
     return list(parsed.entries[: settings.feed_limit_per_source])
 
 
+def _feed_entries_from_url(client: httpx.Client, url: str) -> list[dict[str, Any]]:
+    response = client.get(url)
+    response.raise_for_status()
+    return _parse_feed_payload(url, response.content)
+
+
 def fetch_feed(source: Source, *, timeout: Optional[int] = None, verification: bool = False) -> FeedFetchResult:
     headers = VERIFICATION_HEADERS if verification else REQUEST_HEADERS
     start = perf_counter()
@@ -69,3 +77,55 @@ def verify_feed(source: Source) -> FeedFetchResult:
     if not result.entries:
         raise FeedFetchError(f"No feed entries returned for {source.name}")
     return result
+
+
+def discover_feed_url(base_url: str) -> str | None:
+    """Find a working RSS/Atom feed for a source homepage.
+
+    Discovery is intentionally conservative: prefer declared alternate feeds, then
+    common WordPress/news feed paths, and only return URLs that parse with entries.
+    """
+
+    if not base_url:
+        return None
+
+    headers = VERIFICATION_HEADERS
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    scoped_base_url = base_url if base_url.endswith("/") else f"{base_url}/"
+
+    def add_candidate(url: str) -> None:
+        normalized = urljoin(scoped_base_url, url).strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            candidates.append(normalized)
+
+    with httpx.Client(timeout=settings.verification_timeout, follow_redirects=True, headers=headers) as client:
+        try:
+            homepage = client.get(base_url)
+            homepage.raise_for_status()
+        except Exception:
+            homepage = None
+
+        if homepage is not None:
+            soup = BeautifulSoup(homepage.text, "html.parser")
+            for link in soup.select("link[rel~='alternate'][href]"):
+                content_type = str(link.get("type") or "").lower()
+                title = str(link.get("title") or "").lower()
+                href = str(link.get("href") or "")
+                if "rss" in content_type or "atom" in content_type or "feed" in title:
+                    add_candidate(href)
+
+        for path in ("feed/", "feed", "/feed/", "/feed", "/rss", "/rss.xml", "/atom.xml", "/index.xml"):
+            add_candidate(path)
+
+        for candidate in candidates:
+            try:
+                entries = _feed_entries_from_url(client, candidate)
+            except Exception:
+                continue
+            if entries:
+                return candidate
+
+    return None

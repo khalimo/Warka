@@ -146,16 +146,35 @@ python -m app.cli.run_ai_synthesis --hours 48 --limit 20 --force
 Verified working feeds in the current pass:
 
 - BBC Somali — `https://feeds.bbci.co.uk/somali/rss.xml`
-- Horseed Media — `https://horseedmedia.net/feed`
-- SONNA — `https://sonna.so/en/feed`
-- Caasimada Online — `https://www.caasimada.net/feed/`
-- Goobjoog News — `https://goobjoog.com/feed/`
+- VOA Somali — `https://www.voasomali.com/api/zoju_l-vomx-tpep_jy`
+- SONNA English — `https://sonna.so/en/feed/`
 - Radio Muqdisho — `https://radiomuqdisho.so/feed/`
+- Somali National TV — `https://sntv.so/feed/`
 - Hiiraan Online — `https://www.hiiraan.com/news.xml`
-- Puntland Post — `https://puntlandpost.net/feed`
-- Somali Guardian — `https://somaliguardian.com/feed/`
-- Radio Dalsan — `https://radiodalsan.com/feed/`
 - Shabelle Media — `https://shabellemedia.com/feed/`
+- Goobjoog English — `https://en.goobjoog.com/feed/`
+- Goobjoog Somali — `https://goobjoog.com/feed/`
+- Caasimada Online — `https://www.caasimada.net/feed/`
+- Raxanreeb Online — `https://raxanreeb.com/feed/`
+- Radio Dalsan — `https://radiodalsan.com/feed/`
+- Jowhar — `https://jowhar.com/feed/`
+- Puntland Post — `https://puntlandpost.net/feed/`
+- Horseed Media — `https://horseedmedia.net/feed/`
+- Hiiraanweyn — `https://www.hiiraanweyn.net/feed/`
+- Puntland Mirror — `https://puntlandmirror.net/feed/`
+- Somali Guardian — `https://somaliguardian.com/feed/`
+- Somali Dispatch — `https://www.somalidispatch.com/feed/`
+- The Somali Digest — `https://thesomalidigest.com/feed/`
+- Wardheer News — `https://wardheernews.com/feed/`
+- Radio Ergo — `https://radioergo.org/en/feed/`
+- Somaliland Chronicle — `https://somalilandchronicle.com/feed/`
+- Berbera News — `https://berberanews.net/feed/`
+- Wargeyska Dawan — `https://wargeyskadawan.com/feed/`
+- Oodweyne Media — `https://www.oodweynemedia.com/feed/`
+- Saxafi Media — `https://saxafimedia.com/feed/`
+- AllAfrica Somalia — `https://allafrica.com/tools/headlines/rdf/somalia/headlines.rdf`
+- ReliefWeb Somalia — `https://reliefweb.int/updates/rss.xml?advanced-search=%28PC255%29`
+- The Guardian Somalia — `https://www.theguardian.com/world/somalia/rss`
 
 Currently disabled:
 

@@ -33,7 +33,15 @@ def normalize_region(*, source_category: Optional[str], title: str, summary: str
     haystack = f"{title} {summary}".lower()
     if any(keyword in haystack for keyword in REGION_KEYWORDS):
         return "somalia"
-    if source_category in {"somali_national", "somali_regional"}:
+    if source_category in {
+        "somali_national",
+        "somali_regional",
+        "puntland",
+        "somaliland",
+        "diaspora",
+        "humanitarian",
+        "analysis",
+    }:
         return "somalia"
     if source_category == "official":
         return "somalia"

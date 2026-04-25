@@ -76,7 +76,12 @@ def top_terms(values: list[str], limit: int = 3) -> list[str]:
     return [item for item, _ in counter.most_common(limit)]
 
 
+def normalized_title_key(value: str) -> str:
+    tokens = re.findall(r"[a-z0-9_]+", (value or "").lower())
+    meaningful_tokens = [token for token in tokens if len(token) > 2 and token not in STOP_WORDS]
+    return " ".join(meaningful_tokens)
+
+
 def canonical_url_hash(url: str) -> str:
     normalized = collapse_whitespace(url).lower().rstrip("/")
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
-

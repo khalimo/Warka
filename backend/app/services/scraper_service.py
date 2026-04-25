@@ -14,17 +14,36 @@ settings = get_settings()
 _UNIVERSAL = UniversalNewsScraper()
 
 SCRAPER_ADAPTERS: dict[str, SourceScraper] = {
+    "allafrica-somalia": _UNIVERSAL,
+    "bbc-somali": _UNIVERSAL,
+    "berbera-news": _UNIVERSAL,
     "caasimada": _UNIVERSAL,
     "garowe-online": _UNIVERSAL,
     "goobjoog": _UNIVERSAL,
+    "goobjoog-en": _UNIVERSAL,
+    "guardian-somalia": _UNIVERSAL,
     "hiiraan-online": _UNIVERSAL,
+    "hiiraanweyn": _UNIVERSAL,
     "horseed-media": _UNIVERSAL,
+    "jowhar": _UNIVERSAL,
+    "oodweyne-media": _UNIVERSAL,
     "puntland-post": _UNIVERSAL,
+    "puntland-mirror": _UNIVERSAL,
+    "radio-ergo": _UNIVERSAL,
     "radio-dalsan": _UNIVERSAL,
     "radio-muqdisho": _UNIVERSAL,
+    "raxanreeb": _UNIVERSAL,
+    "reliefweb-somalia": _UNIVERSAL,
+    "saxafi-media": _UNIVERSAL,
     "shabelle-media": _UNIVERSAL,
+    "sntv": _UNIVERSAL,
+    "somali-digest": _UNIVERSAL,
+    "somali-dispatch": _UNIVERSAL,
     "somali-guardian": _UNIVERSAL,
     "sonna": _UNIVERSAL,
+    "voa-somali": _UNIVERSAL,
+    "wardheer-news": _UNIVERSAL,
+    "wargeyska-dawan": _UNIVERSAL,
 }
 
 

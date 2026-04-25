@@ -102,19 +102,39 @@ def build_source_health_report(db: Session) -> list[dict[str, Any]]:
     sources = list(
         db.scalars(select(models.Source).order_by(models.Source.priority.asc(), models.Source.name.asc()))
     )
-    return [
-        {
-            "id": source.id,
-            "name": source.name,
-            "is_enabled": source.is_active,
-            "validation_status": source.validation_status,
-            "last_validated_at": source.last_validated_at.isoformat() if source.last_validated_at else None,
-            "last_success_at": source.last_success_at.isoformat() if source.last_success_at else None,
-            "last_failure_at": source.last_error_at.isoformat() if source.last_error_at else None,
-            "last_error": source.last_error_message,
-            "consecutive_failures": source.consecutive_failures,
-            "stories_ingested_24h": story_counts.get(source.id, 0),
-            "avg_response_time_ms": source.avg_response_time_ms,
-        }
-        for source in sources
-    ]
+    report = []
+    for source in sources:
+        stories_24h = story_counts.get(source.id, 0)
+        consecutive_failures = int(source.consecutive_failures or 0)
+        health_score = 100
+        if not source.is_active:
+            health_score -= 35
+        if source.validation_status not in {"verified", "pending"}:
+            health_score -= 25
+        health_score -= min(consecutive_failures * 15, 45)
+        if source.avg_response_time_ms and source.avg_response_time_ms > 5000:
+            health_score -= 10
+        if source.last_success_at is None:
+            health_score -= 10
+        health_score = max(0, min(100, health_score))
+
+        report.append(
+            {
+                "id": source.id,
+                "name": source.name,
+                "is_enabled": source.is_active,
+                "category": source.category,
+                "language": source.language,
+                "feed_url": source.feed_url,
+                "validation_status": source.validation_status,
+                "last_validated_at": source.last_validated_at.isoformat() if source.last_validated_at else None,
+                "last_success_at": source.last_success_at.isoformat() if source.last_success_at else None,
+                "last_failure_at": source.last_error_at.isoformat() if source.last_error_at else None,
+                "last_error": source.last_error_message,
+                "consecutive_failures": source.consecutive_failures,
+                "stories_ingested_24h": stories_24h,
+                "avg_response_time_ms": source.avg_response_time_ms,
+                "health_score": health_score,
+            }
+        )
+    return report

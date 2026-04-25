@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.repositories.source_repository import SourceRepository
-from app.services.feed_service import verify_feed
+from app.services.feed_service import discover_feed_url, verify_feed
 from app.services.health_monitor import record_validation_result
 from app.services.scraper_service import scrape_source_entries
 from app.services.source_registry import SOURCE_CANDIDATES, registry_seed_payloads
@@ -79,6 +79,37 @@ def verify_registered_sources(
                 }
             )
         except Exception as exc:
+            discovered_feed_url = discover_feed_url(source.base_url or "") if source.base_url else None
+            if discovered_feed_url and discovered_feed_url != source.feed_url:
+                source.feed_url = discovered_feed_url
+                try:
+                    fetch_result = verify_feed(source)
+                    allow_enable = manual_reenable or source.last_validated_at is None
+                    if source.validation_status == "disabled" and not manual_reenable:
+                        allow_enable = False
+                    record_validation_result(
+                        db,
+                        source,
+                        is_valid=True,
+                        error=None,
+                        response_time_ms=fetch_result.response_time_ms,
+                        enable_on_success=allow_enable,
+                    )
+                    results.append(
+                        {
+                            "id": source.id,
+                            "name": source.name,
+                            "status": "verified",
+                            "is_enabled": bool(source.is_active if not allow_enable else True),
+                            "item_count": len(fetch_result.entries),
+                            "response_time_ms": fetch_result.response_time_ms,
+                            "error": "",
+                        }
+                    )
+                    continue
+                except Exception as discovered_exc:
+                    exc = discovered_exc
+
             scraper_entries = []
             if settings.enable_scrapers and source.base_url:
                 scraper_entries = scrape_source_entries(source.id, source.base_url)

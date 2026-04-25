@@ -130,6 +130,10 @@ def run_ingestion(db: Session) -> models.IngestRun:
                     or parse_datetime(entry.get("updated"))
                     or utc_now()
                 )
+                if story_repo.find_recent_similar_title(title=title, published_at=published_at):
+                    stats["skipped_count"] += 1
+                    source_log["skipped"] += 1
+                    continue
                 raw_summary = _entry_value(entry, "summary") or _entry_value(entry, "description")
                 raw_content = _entry_content(entry)
                 sanitized_content = sanitize_html(raw_content)

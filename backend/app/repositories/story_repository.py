@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app import models
+from app.utils.text import jaccard_similarity, normalized_title_key, tokenize
 
 
 class StoryRepository:
@@ -70,6 +71,35 @@ class StoryRepository:
     def find_existing_by_url_hash(self, url_hash: str) -> Optional[models.Story]:
         stmt = select(models.Story).where(models.Story.canonical_url_hash == url_hash)
         return self.db.scalars(stmt).first()
+
+    def find_recent_similar_title(
+        self,
+        *,
+        title: str,
+        published_at: datetime,
+        hours: int = 36,
+        threshold: float = 0.92,
+    ) -> Optional[models.Story]:
+        title_key = normalized_title_key(title)
+        if len(title_key) < 12:
+            return None
+
+        cutoff = published_at - timedelta(hours=hours)
+        ceiling = published_at + timedelta(hours=hours)
+        stmt = (
+            select(models.Story)
+            .where(models.Story.published_at >= cutoff, models.Story.published_at <= ceiling)
+            .order_by(models.Story.published_at.desc())
+            .limit(200)
+        )
+        incoming_tokens = tokenize(title_key)
+        for story in self.db.scalars(stmt):
+            existing_key = normalized_title_key(story.title)
+            if title_key == existing_key:
+                return story
+            if jaccard_similarity(incoming_tokens, tokenize(existing_key)) >= threshold:
+                return story
+        return None
 
     def add(self, story: models.Story) -> models.Story:
         self.db.add(story)
