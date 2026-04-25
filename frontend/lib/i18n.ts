@@ -69,6 +69,16 @@ export const ui = {
       quickBriefTitle: 'Morning brief',
       quickBriefSummary: 'Three developments setting the agenda right now.',
     },
+    briefing: {
+      kicker: 'Today in Warka',
+      title: 'Understand the day in ten seconds.',
+      deck:
+        'A compact briefing on what matters, what is being compared, and which sources are active now.',
+      importantStories: 'key stories',
+      comparedIssues: 'issues under comparison',
+      breakingStories: 'breaking signals',
+      verifiedSources: 'verified sources',
+    },
     sections: {
       topStories: 'Top Stories',
       topStoriesSubtitle: 'The strongest reporting at the center of today’s conversation.',
@@ -146,12 +156,27 @@ export const ui = {
       agreement: 'What both reports establish',
       differences: 'Where the framing shifts',
       sources: 'Sources',
+      sourceCount: 'Sources',
+      languageMix: 'Language mix',
+      storyCount: 'Stories',
+      trustTitle: 'Source signals',
       verdict: 'Editorial summary',
       hideStories: 'Hide stories',
       viewStories: 'View stories',
       developing: 'This story is still developing across the reporting set.',
       noCoverageTitle: 'Compare coverage is warming up',
       noCoverageMessage: 'A multi-source comparison will appear here as matching stories arrive.',
+    },
+    storyTrust: {
+      keyPoints: 'What to know',
+      sourceRailTitle: 'Source transparency',
+      source: 'Source',
+      language: 'Language',
+      reportType: 'Report type',
+      sourcePrefix: 'Reported by',
+      wireOrInternational: 'International or wire report',
+      originalOrLocal: 'Somali or original source',
+      published: 'Published',
     },
     states: {
       frontPageUnavailableTitle: 'We could not load the front page just now',
@@ -225,6 +250,16 @@ export const ui = {
         'Muuqaalku waxa uu raacayaa luqadda aad doorato, halka warbixintu ku sii jirto codkeedii asalka ahaa, si akhrisku uga dhex socdo Soomaali iyo English si cad.',
       quickBriefTitle: 'War-kooban subaxeed',
       quickBriefSummary: 'Saddex qodob oo dejinaya ajandaha maanta.',
+    },
+    briefing: {
+      kicker: 'Maanta Warka',
+      title: 'Ku faham maalinta toban ilbiriqsi.',
+      deck:
+        'War-kooban oo muujinaya waxa muhiimka ah, waxa la isbarbar dhigayo, iyo ilaha hadda firfircoon.',
+      importantStories: 'sheeko muhiim ah',
+      comparedIssues: 'arrimo la isbarbar dhigayo',
+      breakingStories: 'calaamado degdeg ah',
+      verifiedSources: 'ilo la xaqiijiyay',
     },
     sections: {
       topStories: 'Sheekooyinka Ugu Muhiimsan',
@@ -304,12 +339,27 @@ export const ui = {
       agreement: 'Waxa labada warbixin isla xaqiijinayaan',
       differences: 'Halka qaabayntu ka leexato',
       sources: 'Ilaha',
+      sourceCount: 'Ilaha',
+      languageMix: 'Luqadaha',
+      storyCount: 'Sheekooyin',
+      trustTitle: 'Calaamadaha ilaha',
       verdict: 'Soo koobid tafatireed',
       hideStories: 'Qari sheekooyinka',
       viewStories: 'Muuji sheekooyinka',
       developing: 'Sheekadan weli si kala duwan ayaa looga sii warramayaa.',
       noCoverageTitle: 'Qaybta isbarbardhiggu way soo diyaaraysaa',
       noCoverageMessage: 'Isbarbardhig ilo badan leh ayaa halkan kasoo muuqan doona marka sheekooyin is-waafaqsan soo galaan.',
+    },
+    storyTrust: {
+      keyPoints: 'Waxa muhiimka ah',
+      sourceRailTitle: 'Hufnaanta ilaha',
+      source: 'Isha',
+      language: 'Luqadda',
+      reportType: 'Nooca warbixinta',
+      sourcePrefix: 'Waxaa qoray',
+      wireOrInternational: 'Warbixin caalami ah ama wire',
+      originalOrLocal: 'Ilo Soomaali ama asal ah',
+      published: 'La daabacay',
     },
     states: {
       frontPageUnavailableTitle: 'Ma aanan soo qaadi karin bogga hore hadda',
@@ -348,7 +398,7 @@ export const ui = {
   },
 } as const
 
-export type UIStrings = (typeof ui)[typeof defaultLang]
+export type UIStrings = (typeof ui)[AppLanguage]
 
 export function getDictionary(lang: AppLanguage) {
   return ui[lang]

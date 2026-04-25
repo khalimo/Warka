@@ -7,6 +7,7 @@ import { CompareCluster } from '@/lib/types'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
 import { useLanguage } from '@/components/language/LanguageProvider'
+import { getCompareSourceStats } from '@/lib/intelligence'
 import { getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
 
 interface CompareClusterCardProps {
@@ -23,6 +24,7 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
   ).filter((story): story is CompareCluster['stories'][number] => Boolean(story))
   const summary = cluster.aiNeutralSummary || cluster.neutralSummary || cluster.commonFacts
   const differences = cluster.aiCoverageDifferences || cluster.coverageDifferences || dictionary.compare.developing
+  const sourceStats = getCompareSourceStats(cluster, dictionary)
 
   return (
     <div className="overflow-hidden rounded-editorial border border-[#dccfbe] bg-white/92 shadow-lift transition duration-300 ease-editorial hover:shadow-editorial dark:border-white/10 dark:bg-[#182124]">
@@ -36,19 +38,35 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
         <h3 className="text-[1.45rem] font-bold leading-tight text-ink dark:text-[#fbf7f0] sm:text-2xl">{cluster.title}</h3>
 
         <div className="mt-5 space-y-4 sm:mt-6 sm:space-y-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {sourceStats.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-editorial border border-[#ded2c0] bg-paper/70 px-4 py-3 dark:border-white/10 dark:bg-[#141d1f]"
+              >
+                <div className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink/48 dark:text-[#b7b1a8]">
+                  {item.label}
+                </div>
+                <div className="mt-1 font-serif text-[1.35rem] font-bold leading-none text-ink dark:text-[#fbf7f0]">
+                  {item.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="rounded-editorial border border-acacia/25 bg-acacia/10 p-4 dark:border-acacia/20 dark:bg-acacia/10">
             <h4 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-acacia">
-              {dictionary.compare.verdict}
+              {dictionary.compare.agreement}
             </h4>
             <p className="text-sm leading-7 text-ink/78 dark:text-[#e2ddd5]">{summary}</p>
           </div>
 
           {comparisonStories.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="-mx-5 flex snap-x gap-4 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0">
               {comparisonStories.map((story) => (
                 <div
                   key={story.id}
-                  className="rounded-editorial border border-[#ded2c0] bg-paper/80 p-4 dark:border-white/10 dark:bg-[#141d1f]"
+                  className="min-w-[82%] snap-start rounded-editorial border border-[#ded2c0] bg-paper/80 p-4 dark:border-white/10 dark:bg-[#141d1f] sm:min-w-[68%] md:min-w-0"
                 >
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <StoryLanguageBadge story={story} compact />
@@ -75,7 +93,7 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
 
             <div>
               <h4 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-ink/60 dark:text-[#bbb4ab]">
-                {dictionary.compare.sources}
+                {dictionary.compare.trustTitle}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {cluster.sources.map((source) => (

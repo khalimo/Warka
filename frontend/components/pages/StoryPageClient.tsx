@@ -2,18 +2,23 @@
 
 import Link from 'next/link'
 import { FramingBadge } from '@/components/story/FramingBadge'
+import { ReadingProgress } from '@/components/story/ReadingProgress'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { TimeAgo } from '@/components/ui/TimeAgo'
+import { getStorySummaryBullets, getStoryTrustSignals } from '@/lib/intelligence'
 import { getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
 import { Story } from '@/lib/types'
 
 export function StoryPageClient({ story }: { story: Story }) {
   const { lang, dictionary } = useLanguage()
+  const summaryBullets = getStorySummaryBullets(story, lang, dictionary)
+  const trustSignals = getStoryTrustSignals(story, dictionary)
 
   return (
     <article className="bg-paper dark:bg-[#141b1d]">
+      <ReadingProgress />
       <div className="container-custom py-10 sm:py-12 md:py-16 xl:py-20">
         <div className="mx-auto max-w-[52rem]">
           <div className="mb-4 flex flex-wrap gap-2 sm:mb-5 sm:gap-3">
@@ -40,6 +45,51 @@ export function StoryPageClient({ story }: { story: Story }) {
             <span>{story.region}</span>
           </div>
 
+          <div className="mb-8 grid gap-4 sm:mb-10 lg:grid-cols-[minmax(0,1fr)_17rem]">
+            <section className="rounded-editorial border border-acacia/25 bg-acacia/10 p-5 dark:border-acacia/20 dark:bg-acacia/10 sm:p-6">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-acacia">
+                {dictionary.storyTrust.keyPoints}
+              </h2>
+              <ul className="space-y-3">
+                {summaryBullets.map((bullet) => (
+                  <li
+                    key={bullet}
+                    className="grid grid-cols-[0.45rem_minmax(0,1fr)] gap-3 text-base leading-7 text-ink/78 dark:text-[#e0dbd2]"
+                  >
+                    <span className="mt-[0.72rem] h-1.5 w-1.5 rounded-full bg-acacia" />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <aside className="rounded-editorial border border-[#d8cab7] bg-white/80 p-5 dark:border-white/10 dark:bg-[#182124] sm:p-6">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-ink/58 dark:text-[#bbb4ab]">
+                {dictionary.storyTrust.sourceRailTitle}
+              </h2>
+              <dl className="space-y-4">
+                {trustSignals.map((signal) => (
+                  <div key={signal.label}>
+                    <dt className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-ink/45 dark:text-[#a9a39a]">
+                      {signal.label}
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium leading-6 text-ink/78 dark:text-[#e0dbd2]">
+                      {signal.value}
+                    </dd>
+                  </div>
+                ))}
+                <div>
+                  <dt className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-ink/45 dark:text-[#a9a39a]">
+                    {dictionary.storyTrust.published}
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium leading-6 text-ink/78 dark:text-[#e0dbd2]">
+                    <TimeAgo date={story.publishedAt} />
+                  </dd>
+                </div>
+              </dl>
+            </aside>
+          </div>
+
           {story.imageUrl ? (
             <div className="mb-10 overflow-hidden rounded-editorial border border-[#d8cab7] shadow-editorial dark:border-white/10 sm:mb-12">
               <img
@@ -47,17 +97,6 @@ export function StoryPageClient({ story }: { story: Story }) {
                 alt={getStoryHeadline(story, lang)}
                 className="aspect-[4/3] w-full object-cover sm:aspect-[16/10]"
               />
-            </div>
-          ) : null}
-
-          {story.summary ? (
-            <div className="mb-10 rounded-editorial border border-acacia/25 bg-acacia/10 p-5 dark:border-acacia/20 dark:bg-acacia/10 sm:mb-12 sm:p-6 md:p-7">
-              <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-acacia">
-                {dictionary.pages.story.summaryTitle}
-              </h3>
-              <p className="max-w-[44rem] text-base leading-7 text-ink/78 dark:text-[#e0dbd2] sm:leading-8">
-                {story.summary}
-              </p>
             </div>
           ) : null}
 

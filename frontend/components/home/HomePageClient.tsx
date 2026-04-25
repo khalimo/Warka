@@ -1,6 +1,7 @@
 'use client'
 
 import { CompareClusterCard } from '@/components/compare/CompareClusterCard'
+import { TodayBrief } from '@/components/home/TodayBrief'
 import { HeroStoryCard } from '@/components/story/HeroStoryCard'
 import { StoryCardCompact } from '@/components/story/StoryCardCompact'
 import { StoryCardLarge } from '@/components/story/StoryCardLarge'
@@ -29,14 +30,12 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
     )
   }
 
-  const topStories = (homeData.secondaryStories.length > 0
-    ? homeData.secondaryStories
-    : homeData.latestStories.filter((story) => story.id !== homeData.heroStory.id)
-  ).slice(0, 3)
   const latestBrief = homeData.latestStories.filter((story) => story.id !== homeData.heroStory.id).slice(0, 3)
 
   return (
     <div className="bg-paper dark:bg-[#141b1d]">
+      <TodayBrief homeData={homeData} />
+
       <section className="border-b news-divider">
         <div className="container-custom py-8 md:py-14 xl:py-16">
           <div className="mb-8 grid gap-6 border-b news-divider pb-7 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] lg:items-end">
@@ -73,17 +72,19 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
         </div>
       </section>
 
-      <section className="container-custom py-14 md:py-16 xl:py-20">
+      <section className="container-custom py-12 md:py-16 xl:py-20">
         <SectionHeader
-          eyebrow={dictionary.home.eyebrow}
-          title={dictionary.sections.topStories}
-          subtitle={dictionary.sections.topStoriesSubtitle}
+          title={dictionary.sections.compareCoverage}
+          subtitle={dictionary.sections.compareCoverageSubtitle}
         />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:gap-8">
-          {topStories.map((story) => (
-            <StoryCardLarge key={story.id} story={story} />
-          ))}
-        </div>
+        {homeData.comparePreview ? (
+          <CompareClusterCard cluster={homeData.comparePreview} />
+        ) : (
+          <EmptyState
+            title={dictionary.compare.noCoverageTitle}
+            message={dictionary.compare.noCoverageMessage}
+          />
+        )}
       </section>
 
       <section className="border-t news-divider bg-white/30 py-12 dark:bg-[#182124]/40 md:py-16 xl:py-20">
@@ -98,21 +99,6 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
             ))}
           </div>
         </div>
-      </section>
-
-      <section className="container-custom py-12 md:py-16 xl:py-20">
-        <SectionHeader
-          title={dictionary.sections.compareCoverage}
-          subtitle={dictionary.sections.compareCoverageSubtitle}
-        />
-        {homeData.comparePreview ? (
-          <CompareClusterCard cluster={homeData.comparePreview} />
-        ) : (
-          <EmptyState
-            title={dictionary.compare.noCoverageTitle}
-            message={dictionary.compare.noCoverageMessage}
-          />
-        )}
       </section>
 
       <section className="border-t news-divider py-12 md:py-16 xl:py-20">
