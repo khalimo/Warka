@@ -19,6 +19,7 @@ from app.services.health_monitor import build_source_health_report, record_sourc
 from app.services.normalization_service import derive_topics, make_story_slug, normalize_category, normalize_region
 from app.services.scraper_service import scrape_source_entries
 from app.services.sanitization_service import sanitize_html
+from app.services.translation_service import translate_story_fields
 from app.utils.dates import parse_datetime, utc_now
 from app.utils.text import canonical_url_hash, estimate_reading_time, strip_html
 
@@ -152,6 +153,13 @@ def run_ingestion(db: Session) -> models.IngestRun:
                     current_image_url=_entry_image(entry),
                     category=category,
                 )
+                translations = translate_story_fields(
+                    source_language=source.language,
+                    title=title,
+                    excerpt=excerpt,
+                    summary=enrichment["summary"],
+                    content_html=enrichment["content_html"],
+                )
 
                 db_story = models.Story(
                     slug=make_story_slug(title=title, published_at=published_at),
@@ -167,6 +175,7 @@ def run_ingestion(db: Session) -> models.IngestRun:
                     region=region,
                     category=category,
                     topics=topics,
+                    translations=translations,
                     image_url=enrichment["image_url"] or get_category_image(category),
                     reading_time=estimate_reading_time(enrichment["content_html"] or excerpt),
                     is_breaking=category in {"security", "politics"} and "breaking" in title.lower(),

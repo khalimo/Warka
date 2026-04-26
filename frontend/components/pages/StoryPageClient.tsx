@@ -8,13 +8,14 @@ import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { getStorySummaryBullets, getStoryTrustSignals } from '@/lib/intelligence'
-import { getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
+import { getStoryContent, getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
 import { Story } from '@/lib/types'
 
 export function StoryPageClient({ story }: { story: Story }) {
   const { lang, dictionary } = useLanguage()
   const summaryBullets = getStorySummaryBullets(story, lang, dictionary)
   const trustSignals = getStoryTrustSignals(story, dictionary)
+  const storyContent = getStoryContent(story, lang)
 
   return (
     <article className="bg-paper dark:bg-[#141b1d]">
@@ -100,10 +101,10 @@ export function StoryPageClient({ story }: { story: Story }) {
             </div>
           ) : null}
 
-          {story.content ? (
+          {storyContent ? (
             <div
               className="prose prose-base max-w-none prose-headings:font-serif prose-headings:text-ink prose-p:max-w-[44rem] prose-p:text-[1rem] prose-p:leading-7 prose-p:text-ink/78 prose-a:text-primary-700 prose-strong:text-ink prose-li:text-ink/78 dark:prose-headings:text-[#fbf7f0] dark:prose-p:text-[#ddd7ce] dark:prose-a:text-primary-200 dark:prose-strong:text-[#fbf7f0] dark:prose-li:text-[#ddd7ce] sm:prose-lg sm:prose-p:text-[1.06rem] sm:prose-p:leading-8"
-              dangerouslySetInnerHTML={{ __html: story.content }}
+              dangerouslySetInnerHTML={{ __html: storyContent }}
             />
           ) : null}
 

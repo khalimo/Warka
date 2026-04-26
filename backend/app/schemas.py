@@ -50,6 +50,7 @@ class Story(BaseModel):
     region: Optional[str] = None
     category: Optional[str] = None
     topics: list[str] = Field(default_factory=list)
+    translations: dict[str, Any] = Field(default_factory=dict)
     image_url: Optional[str] = None
     reading_time: Optional[int] = None
     is_breaking: bool = False

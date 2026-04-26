@@ -35,6 +35,7 @@ def map_story_to_response(db_story: models.Story) -> schemas.Story:
         region=db_story.region,
         category=db_story.category,
         topics=list(db_story.topics or []),
+        translations=dict(db_story.translations or {}),
         image_url=db_story.image_url,
         reading_time=db_story.reading_time,
         is_breaking=db_story.is_breaking,

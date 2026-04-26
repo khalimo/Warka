@@ -92,6 +92,7 @@ class Story(Base):
     region: Mapped[Optional[str]] = mapped_column(String, index=True)
     category: Mapped[Optional[str]] = mapped_column(String, index=True)
     topics: Mapped[list[str]] = mapped_column(JsonType, default=list)
+    translations: Mapped[dict[str, Any]] = mapped_column(JsonType, default=dict)
     image_url: Mapped[Optional[str]] = mapped_column(String)
     reading_time: Mapped[Optional[int]] = mapped_column(Integer)
     is_breaking: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

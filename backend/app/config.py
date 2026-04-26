@@ -13,9 +13,12 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     enable_openai: bool = False
     enable_ai_synthesis: bool = False
+    enable_translations: bool = False
     ai_model: str = "gpt-4o-mini"
+    translation_model: str = "gpt-4o-mini"
     ai_temperature: float = 0.3
     ai_max_tokens: int = 500
+    translation_max_tokens: int = 1600
     source_validation_on_startup: bool = True
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     feed_timeout: int = 30

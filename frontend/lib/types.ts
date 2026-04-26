@@ -29,6 +29,7 @@ export interface Story {
     headline?: Partial<Record<AppLanguage, string>>
     excerpt?: Partial<Record<AppLanguage, string>>
     summary?: Partial<Record<AppLanguage, string>>
+    content?: Partial<Record<AppLanguage, string>>
   }
   source: Source
   publishedAt: string
@@ -116,6 +117,12 @@ export interface BackendStory {
   region: string
   category: string
   topics?: string[] | null
+  translations?: {
+    headline?: Partial<Record<AppLanguage, string>>
+    excerpt?: Partial<Record<AppLanguage, string>>
+    summary?: Partial<Record<AppLanguage, string>>
+    content?: Partial<Record<AppLanguage, string>>
+  } | null
   framing?: BackendFraming | null
   image_url?: string | null
   original_url: string

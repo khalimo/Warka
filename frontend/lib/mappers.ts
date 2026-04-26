@@ -108,6 +108,7 @@ export function mapStory(story: BackendStory): Story {
     excerpt: story.excerpt || story.summary || '',
     content: story.content_html || undefined,
     summary: story.summary || undefined,
+    translations: story.translations || undefined,
     source: mapSource(story.source),
     publishedAt: story.published_at,
     updatedAt: story.updated_at || undefined,

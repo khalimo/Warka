@@ -75,9 +75,12 @@ Required environment variables:
 DATABASE_URL
 ENABLE_OPENAI=false
 ENABLE_AI_SYNTHESIS=false
+ENABLE_TRANSLATIONS=false
 AI_MODEL=gpt-4o-mini
+TRANSLATION_MODEL=gpt-4o-mini
 AI_TEMPERATURE=0.3
 AI_MAX_TOKENS=500
+TRANSLATION_MAX_TOKENS=1600
 CORS_ORIGINS=["https://your-frontend-domain.com","http://localhost:3000"]
 SOURCE_VALIDATION_ON_STARTUP=true
 VERIFICATION_TIMEOUT=15
@@ -100,7 +103,7 @@ Optional:
 OPENAI_API_KEY
 ```
 
-AI synthesis stays fully optional. If `ENABLE_AI_SYNTHESIS=false`, no model calls are made and the rest of the backend behaves exactly as before.
+AI synthesis and article translation stay fully optional. If `ENABLE_AI_SYNTHESIS=false` and `ENABLE_TRANSLATIONS=false`, no model calls are made and the rest of the backend behaves exactly as before. When `ENABLE_TRANSLATIONS=true`, ingestion stores Somali-to-English or English-to-Somali story translations for titles, excerpts, summaries, and article bodies when an API key is available.
 
 Scraping is also optional. When `ENABLE_SCRAPERS=true`, Warka still reads RSS first, then uses approved source adapters to supplement or recover public article pages. Scrapers respect `robots.txt` by default, rate limit requests per domain, keep attribution to the original URL, and automatically skip sources without an approved adapter.
 
@@ -141,6 +144,13 @@ Useful flags:
 python -m app.cli.run_ai_synthesis --cluster-id <cluster-id>
 python -m app.cli.run_ai_synthesis --hours 48 --limit 20 --dry-run
 python -m app.cli.run_ai_synthesis --hours 48 --limit 20 --force
+```
+
+Backfill translations for existing stories after enabling `ENABLE_TRANSLATIONS=true`:
+
+```bash
+cd backend
+python -m app.cli.backfill_translations --limit 25
 ```
 
 Verified working feeds in the current pass:
