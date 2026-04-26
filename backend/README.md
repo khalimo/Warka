@@ -175,6 +175,10 @@ Verified working feeds in the current pass:
 - AllAfrica Somalia — `https://allafrica.com/tools/headlines/rdf/somalia/headlines.rdf`
 - ReliefWeb Somalia — `https://reliefweb.int/updates/rss.xml?advanced-search=%28PC255%29`
 - The Guardian Somalia — `https://www.theguardian.com/world/somalia/rss`
+- New York Times Somalia — `https://www.nytimes.com/svc/collections/v1/publish/www.nytimes.com/topic/destination/somalia/rss.xml`
+- ICRC Somalia — `https://blogs.icrc.org/somalia/feed/`
+- UNFPA Somalia — `https://somalia.unfpa.org/en/rss.xml`
+- The Somalia Investor — `https://somaliainvestor.so/feed/`
 
 Currently disabled:
 
