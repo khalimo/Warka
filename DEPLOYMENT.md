@@ -49,6 +49,7 @@ Required environment variables:
 
 ```text
 DATABASE_URL=<Render internal database URL>
+INTERNAL_API_KEY=<long-random-secret>
 ENABLE_OPENAI=false
 ENABLE_AI_SYNTHESIS=false
 AI_MODEL=gpt-4o-mini
@@ -69,6 +70,14 @@ HEALTH_CHECK_INTERVAL_HOURS=24
 LOG_LEVEL=INFO
 CLUSTER_SIMILARITY_THRESHOLD=0.6
 ```
+
+Generate `INTERNAL_API_KEY` locally:
+
+```bash
+openssl rand -hex 32
+```
+
+Never expose `INTERNAL_API_KEY` in frontend environment variables. Never prefix it with `NEXT_PUBLIC_`. Use it only from trusted server-side tools, cron jobs, local curl commands, or future admin-only server-side routes.
 
 Optional AI synthesis:
 
@@ -101,7 +110,8 @@ Redeploy after changing environment variables.
 The homepage needs both stories and at least one cluster. After the backend is live, trigger ingestion:
 
 ```bash
-curl -X POST https://api.warkasta.com/api/ingest
+curl -X POST https://api.warkasta.com/api/ingest \
+  -H "X-Internal-API-Key: $INTERNAL_API_KEY"
 ```
 
 Then verify:
@@ -116,8 +126,15 @@ If `api.warkasta.com` is not resolving yet, test Render directly:
 
 ```bash
 curl https://warka-api.onrender.com/api/health
-curl -X POST https://warka-api.onrender.com/api/ingest
+curl -X POST https://warka-api.onrender.com/api/ingest \
+  -H "X-Internal-API-Key: $INTERNAL_API_KEY"
 ```
+
+## Temporary MVP Admin Protection
+
+`/api/internal/*` and `/api/ingest` are protected by the `X-Internal-API-Key` request header. This is temporary MVP protection for one-week public/private testing, not a replacement for proper user authentication.
+
+Before building or exposing a real admin dashboard, add proper authentication and authorization. Do not send the internal key from browser-executed frontend code.
 
 ## Production Smoke Check
 
@@ -137,4 +154,4 @@ The smoke check verifies the frontend responds, backend health responds, story e
 
 ## Legacy Streamlit App
 
-The root `app.py` Streamlit app is retained as legacy reference code. Do not use the root `render.yaml` for the active public Warka deployment. Once the Next.js and FastAPI stack is stable, move the legacy Streamlit files into a `legacy-streamlit/` folder or remove them in a dedicated cleanup pass.
+The root `app.py` Streamlit app is retained as legacy reference code. Do not use the root `render.yaml` for the active public Warka deployment while it points at Streamlit. Once the Next.js and FastAPI stack is stable, move the legacy Streamlit files into a `legacy-streamlit/` folder or remove them in a dedicated cleanup pass.

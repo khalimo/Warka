@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import models
+from app.auth import require_internal_api_key
 from app.database import get_db
 from app.repositories.cluster_repository import ClusterRepository
 from app.repositories.ingest_run_repository import IngestRunRepository
@@ -14,7 +15,11 @@ from app.services.health_monitor import build_source_health_report
 from app.utils.dates import utc_now
 
 
-router = APIRouter(prefix="/api/internal", tags=["operations"])
+router = APIRouter(
+    prefix="/api/internal",
+    tags=["operations"],
+    dependencies=[Depends(require_internal_api_key)],
+)
 
 
 @router.get("/operations", response_model=OperationsSummary)

@@ -208,6 +208,8 @@ GET  /api/sources
 POST /api/ingest
 ```
 
+`POST /api/ingest` and `/api/internal/*` endpoints require `X-Internal-API-Key` when `INTERNAL_API_KEY` is configured.
+
 ## First Run Workflow
 
 1. Run migrations
@@ -216,7 +218,8 @@ POST /api/ingest
 4. Trigger ingestion:
 
 ```bash
-curl -X POST http://localhost:8000/api/ingest
+curl -X POST http://localhost:8000/api/ingest \
+  -H "X-Internal-API-Key: $INTERNAL_API_KEY"
 ```
 
 5. Verify:
@@ -270,13 +273,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Trigger first ingestion:
 
 ```bash
-curl -X POST http://localhost:8000/api/ingest
+curl -X POST http://localhost:8000/api/ingest \
+  -H "X-Internal-API-Key: $INTERNAL_API_KEY"
 ```
 
 Production ingestion:
 
 ```bash
-curl -X POST https://api.warkasta.com/api/ingest
+curl -X POST https://api.warkasta.com/api/ingest \
+  -H "X-Internal-API-Key: $INTERNAL_API_KEY"
 ```
 
 Set up a cron job locally:

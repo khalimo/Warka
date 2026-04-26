@@ -95,6 +95,7 @@ class HomePageData(BaseModel):
     hero_story: Story
     secondary_stories: list[Story]
     compare_preview: Optional[Cluster] = None
+    compare_clusters: list[Cluster] = Field(default_factory=list)
     latest_stories: list[Story]
     somalia_stories: list[Story]
     world_stories: list[Story]

@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.auth import require_internal_api_key
 from app.database import get_db
 from app.mappers import map_cluster_to_response
 from app.repositories.cluster_repository import ClusterRepository
@@ -23,6 +24,7 @@ def get_clusters(
     offset: int = Query(default=0, ge=0),
     has_ai_synthesis: Optional[bool] = Query(default=None),
     ai_review_status: Optional[str] = Query(default=None),
+    renderable_only: bool = Query(default=True),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[Cluster]:
     repository = ClusterRepository(db)
@@ -35,19 +37,25 @@ def get_clusters(
         offset=offset,
         has_ai_synthesis=has_ai_synthesis,
         ai_review_status=normalized_review_status,
+        renderable_only=renderable_only,
     )
     return PaginatedResponse[Cluster](
         items=[map_cluster_to_response(cluster) for cluster in clusters],
         total=repository.count_all(
             has_ai_synthesis=has_ai_synthesis,
             ai_review_status=normalized_review_status,
+            renderable_only=renderable_only,
         ),
         limit=limit,
         offset=offset,
     )
 
 
-@router.patch("/internal/clusters/{cluster_id}/ai-review", response_model=AIReviewUpdateResponse)
+@router.patch(
+    "/internal/clusters/{cluster_id}/ai-review",
+    response_model=AIReviewUpdateResponse,
+    dependencies=[Depends(require_internal_api_key)],
+)
 def update_cluster_ai_review(
     payload: AIReviewUpdateRequest,
     cluster_id: str = Path(...),

@@ -136,6 +136,9 @@ export function mapStory(story: BackendStory): Story {
 }
 
 export function mapCluster(cluster: BackendCluster): CompareCluster {
+  const stories = cluster.stories || []
+  const sources = cluster.sources || []
+
   return {
     id: cluster.id,
     title: cluster.title,
@@ -160,16 +163,19 @@ export function mapCluster(cluster: BackendCluster): CompareCluster {
     storyCount: cluster.story_count || undefined,
     confidenceScore: cluster.confidence_score ?? undefined,
     eventSignature: cluster.event_signature || undefined,
-    stories: cluster.stories.map(mapStory),
-    sources: cluster.sources.map(mapSource),
+    stories: stories.map(mapStory),
+    sources: sources.map(mapSource),
   }
 }
 
 export function mapHomePageData(home: BackendHomePageData): HomePageData {
+  const compareClusters = (home.compare_clusters || []).map(mapCluster)
+
   return {
     heroStory: mapStory(home.hero_story),
     secondaryStories: home.secondary_stories.map(mapStory),
     comparePreview: home.compare_preview ? mapCluster(home.compare_preview) : null,
+    compareClusters,
     latestStories: home.latest_stories.map(mapStory),
     somaliaStories: home.somalia_stories.map(mapStory),
     worldStories: home.world_stories.map(mapStory),
