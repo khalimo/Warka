@@ -23,17 +23,24 @@ class ClusterRepository:
         has_ai_synthesis: Optional[bool] = None,
         ai_review_status: Optional[str] = None,
         renderable_only: bool = False,
+        category: Optional[str] = None,
+        region: Optional[str] = None,
+        source_id: Optional[str] = None,
     ) -> int:
-        if renderable_only:
-            stmt = self._renderable_ids_select()
-            stmt = self._apply_filters(stmt, has_ai_synthesis, ai_review_status)
+        if renderable_only or category or region or source_id:
+            stmt = select(models.Cluster.id)
+            if renderable_only:
+                stmt = stmt.where(models.Cluster.id.in_(self._renderable_ids_select()))
+            if category or region or source_id:
+                stmt = stmt.where(models.Cluster.id.in_(self._story_filtered_ids_select(category, region, source_id)))
+            stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status)
             return int(self.db.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
 
         stmt = select(func.count(models.Cluster.id))
-        stmt = self._apply_filters(stmt, has_ai_synthesis, ai_review_status)
+        stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status)
         return int(self.db.scalar(stmt) or 0)
 
-    def _apply_filters(
+    def _apply_cluster_filters(
         self,
         stmt,
         has_ai_synthesis: Optional[bool] = None,
@@ -48,6 +55,21 @@ class ClusterRepository:
                 )
             else:
                 stmt = stmt.where(models.Cluster.ai_review_status == ai_review_status)
+        return stmt
+
+    def _story_filtered_ids_select(
+        self,
+        category: Optional[str] = None,
+        region: Optional[str] = None,
+        source_id: Optional[str] = None,
+    ):
+        stmt = select(models.Story.cluster_id).where(models.Story.cluster_id.is_not(None)).group_by(models.Story.cluster_id)
+        if category:
+            stmt = stmt.where(func.lower(models.Story.category) == category.lower())
+        if region:
+            stmt = stmt.where(func.lower(models.Story.region) == region.lower())
+        if source_id:
+            stmt = stmt.where(models.Story.source_id == source_id)
         return stmt
 
     def _renderable_ids_select(self):
@@ -69,11 +91,16 @@ class ClusterRepository:
         has_ai_synthesis: Optional[bool] = None,
         ai_review_status: Optional[str] = None,
         renderable_only: bool = False,
+        category: Optional[str] = None,
+        region: Optional[str] = None,
+        source_id: Optional[str] = None,
     ) -> list[models.Cluster]:
         stmt = self._base_select().order_by(models.Cluster.created_at.desc())
-        stmt = self._apply_filters(stmt, has_ai_synthesis, ai_review_status)
+        stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status)
         if renderable_only:
             stmt = stmt.where(models.Cluster.id.in_(self._renderable_ids_select()))
+        if category or region or source_id:
+            stmt = stmt.where(models.Cluster.id.in_(self._story_filtered_ids_select(category, region, source_id)))
         stmt = stmt.offset(offset).limit(limit)
         return list(self.db.scalars(stmt).unique())
 

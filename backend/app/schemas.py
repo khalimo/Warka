@@ -96,9 +96,18 @@ class HomePageData(BaseModel):
     secondary_stories: list[Story]
     compare_preview: Optional[Cluster] = None
     compare_clusters: list[Cluster] = Field(default_factory=list)
+    diagnostics: "HomeDiagnostics" = Field(default_factory=lambda: HomeDiagnostics())
     latest_stories: list[Story]
     somalia_stories: list[Story]
     world_stories: list[Story]
+
+
+class HomeDiagnostics(BaseModel):
+    story_count: int = 0
+    active_source_count: int = 0
+    total_cluster_count: int = 0
+    renderable_cluster_count: int = 0
+    latest_cluster_created_at: Optional[datetime] = None
 
 
 T = TypeVar("T")

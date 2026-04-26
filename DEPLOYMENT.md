@@ -50,6 +50,7 @@ Required environment variables:
 ```text
 DATABASE_URL=<Render internal database URL>
 INTERNAL_API_KEY=<long-random-secret>
+INTERNAL_RATE_LIMIT_PER_MINUTE=30
 ENABLE_OPENAI=false
 ENABLE_AI_SYNTHESIS=false
 AI_MODEL=gpt-4o-mini

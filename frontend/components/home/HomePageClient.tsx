@@ -44,6 +44,12 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
     ...homeData.worldStories.map((story) => story.source.id),
     ...compareClusters.flatMap((cluster) => cluster.sources.map((source) => source.id)),
   ]).size
+  const latestClusterDate = homeData.diagnostics.latestClusterCreatedAt
+    ? new Date(homeData.diagnostics.latestClusterCreatedAt)
+    : null
+  const latestClusterLabel = latestClusterDate && !Number.isNaN(latestClusterDate.getTime())
+    ? latestClusterDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : 'Preparing'
   const coverageRails = [
     { key: 'humanitarian', label: lang === 'so' ? 'Bini’aadannimo' : 'Humanitarian' },
     { key: 'diaspora', label: lang === 'so' ? 'Qurbajoog' : 'Diaspora' },
@@ -75,9 +81,9 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
 
           <div className="mb-8 grid gap-3 sm:grid-cols-3">
             {[
-              ['Active sources', sourceCount],
-              ['Latest stories', homeData.latestStories.length],
-              ['Coverage comparisons', compareClusters.length],
+              ['Active sources', homeData.diagnostics.activeSourceCount || sourceCount],
+              ['Scanned stories', homeData.diagnostics.storyCount || homeData.latestStories.length],
+              ['Coverage comparisons', homeData.diagnostics.renderableClusterCount || compareClusters.length],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -131,15 +137,36 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
           </Link>
         </div>
         {compareClusters.length > 0 ? (
-          <div className="space-y-6">
-            {compareClusters.slice(0, 3).map((cluster) => (
-              <CompareClusterCard key={cluster.id} cluster={cluster} />
-            ))}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
+            <div className="space-y-6">
+              {compareClusters.slice(0, 3).map((cluster) => (
+                <CompareClusterCard key={cluster.id} cluster={cluster} />
+              ))}
+            </div>
+            <aside className="section-surface p-5">
+              <div className="eyebrow">Comparison pulse</div>
+              <div className="mt-4 space-y-4">
+                {[
+                  ['Renderable', homeData.diagnostics.renderableClusterCount],
+                  ['Total clusters', homeData.diagnostics.totalClusterCount],
+                  ['Last cluster', latestClusterLabel],
+                ].map(([label, value]) => (
+                  <div key={label} className="border-b news-divider pb-3 last:border-0 last:pb-0">
+                    <div className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-ink/48 dark:text-[#b7b1a8]">
+                      {label}
+                    </div>
+                    <div className="mt-1 font-serif text-2xl font-bold text-ink dark:text-[#fbf7f0]">
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </aside>
           </div>
         ) : (
           <EmptyState
             title="Coverage comparisons are being prepared"
-            message={`Stories have been collected, but Warka needs at least two related reports before comparison cards appear. Current homepage sample: ${homeData.latestStories.length} stories from ${sourceCount} sources.`}
+            message={`Warka has ${homeData.diagnostics.storyCount || homeData.latestStories.length} stories, ${homeData.diagnostics.totalClusterCount} total clusters, and ${homeData.diagnostics.renderableClusterCount} public-ready comparisons. It needs at least two related reports before comparison cards appear.`}
           />
         )}
       </section>

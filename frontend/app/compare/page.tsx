@@ -11,8 +11,11 @@ export const dynamic = 'force-dynamic'
 type PageProps = {
   searchParams?: {
     page?: string
+    filter?: string
   }
 }
+
+const VALID_FILTERS = ['all', 'somalia', 'world', 'politics', 'security', 'humanitarian', 'economy'] as const
 
 function normalizePage(rawPage?: string): number {
   const parsed = Number(rawPage)
@@ -22,12 +25,21 @@ function normalizePage(rawPage?: string): number {
   return Math.floor(parsed)
 }
 
+function normalizeFilter(rawFilter?: string): (typeof VALID_FILTERS)[number] {
+  const normalized = (rawFilter || '').trim().toLowerCase()
+  if (VALID_FILTERS.includes(normalized as (typeof VALID_FILTERS)[number])) {
+    return normalized as (typeof VALID_FILTERS)[number]
+  }
+  return 'all'
+}
+
 export default async function ComparePage({ searchParams }: PageProps) {
   const page = normalizePage(searchParams?.page)
+  const filter = normalizeFilter(searchParams?.filter)
   const limit = 20
   const offset = (page - 1) * limit
   const [result, sources, latest] = await Promise.all([
-    apiClient.getCompareClusters(limit, offset, undefined, undefined, true),
+    apiClient.getCompareClusters(limit, offset, undefined, undefined, true, filter),
     apiClient.getSources(),
     apiClient.getLatestStories(12, 0),
   ])
@@ -41,6 +53,7 @@ export default async function ComparePage({ searchParams }: PageProps) {
       activeSourceCount={sources?.length || 0}
       readyStoryCount={latest?.total || latest?.items.length || 0}
       apiUnavailable={!result}
+      activeFilter={filter}
     />
   )
 }

@@ -170,12 +170,20 @@ export function mapCluster(cluster: BackendCluster): CompareCluster {
 
 export function mapHomePageData(home: BackendHomePageData): HomePageData {
   const compareClusters = (home.compare_clusters || []).map(mapCluster)
+  const diagnostics = home.diagnostics || {}
 
   return {
     heroStory: mapStory(home.hero_story),
     secondaryStories: home.secondary_stories.map(mapStory),
     comparePreview: home.compare_preview ? mapCluster(home.compare_preview) : null,
     compareClusters,
+    diagnostics: {
+      storyCount: diagnostics.story_count || 0,
+      activeSourceCount: diagnostics.active_source_count || 0,
+      totalClusterCount: diagnostics.total_cluster_count || 0,
+      renderableClusterCount: diagnostics.renderable_cluster_count || 0,
+      latestClusterCreatedAt: diagnostics.latest_cluster_created_at || undefined,
+    },
     latestStories: home.latest_stories.map(mapStory),
     somaliaStories: home.somalia_stories.map(mapStory),
     worldStories: home.world_stories.map(mapStory),

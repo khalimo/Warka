@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import require_internal_api_key
 from app.database import get_db
 from app.mappers import map_cluster_to_response
+from app.rate_limit import require_internal_rate_limit
 from app.repositories.cluster_repository import ClusterRepository
 from app.schemas import AIReviewUpdateRequest, AIReviewUpdateResponse, Cluster, PaginatedResponse
 from app.utils.dates import utc_now
@@ -16,6 +17,14 @@ from app.utils.dates import utc_now
 router = APIRouter(prefix="/api", tags=["clusters"])
 
 ALLOWED_AI_REVIEW_STATUSES = {"unreviewed", "good", "weak", "misleading", "hallucinated"}
+ALLOWED_COMPARE_FILTERS = {"somalia", "world", "politics", "security", "humanitarian", "economy"}
+
+
+def _normalize_filter(value: Optional[str]) -> Optional[str]:
+    normalized = (value or "").strip().lower() or None
+    if normalized in ALLOWED_COMPARE_FILTERS:
+        return normalized
+    return None
 
 
 @router.get("/clusters", response_model=PaginatedResponse[Cluster])
@@ -25,12 +34,18 @@ def get_clusters(
     has_ai_synthesis: Optional[bool] = Query(default=None),
     ai_review_status: Optional[str] = Query(default=None),
     renderable_only: bool = Query(default=True),
+    category: Optional[str] = Query(default=None),
+    region: Optional[str] = Query(default=None),
+    source_id: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[Cluster]:
     repository = ClusterRepository(db)
     normalized_review_status = (ai_review_status or "").strip().lower() or None
     if normalized_review_status not in ALLOWED_AI_REVIEW_STATUSES:
         normalized_review_status = None
+    normalized_category = _normalize_filter(category)
+    normalized_region = _normalize_filter(region)
+    normalized_source_id = (source_id or "").strip() or None
 
     clusters = repository.list_paginated(
         limit=limit,
@@ -38,6 +53,9 @@ def get_clusters(
         has_ai_synthesis=has_ai_synthesis,
         ai_review_status=normalized_review_status,
         renderable_only=renderable_only,
+        category=normalized_category,
+        region=normalized_region,
+        source_id=normalized_source_id,
     )
     return PaginatedResponse[Cluster](
         items=[map_cluster_to_response(cluster) for cluster in clusters],
@@ -45,6 +63,9 @@ def get_clusters(
             has_ai_synthesis=has_ai_synthesis,
             ai_review_status=normalized_review_status,
             renderable_only=renderable_only,
+            category=normalized_category,
+            region=normalized_region,
+            source_id=normalized_source_id,
         ),
         limit=limit,
         offset=offset,
@@ -54,7 +75,7 @@ def get_clusters(
 @router.patch(
     "/internal/clusters/{cluster_id}/ai-review",
     response_model=AIReviewUpdateResponse,
-    dependencies=[Depends(require_internal_api_key)],
+    dependencies=[Depends(require_internal_api_key), Depends(require_internal_rate_limit)],
 )
 def update_cluster_ai_review(
     payload: AIReviewUpdateRequest,

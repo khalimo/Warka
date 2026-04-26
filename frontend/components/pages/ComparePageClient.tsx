@@ -15,6 +15,7 @@ export function ComparePageClient({
   activeSourceCount = 0,
   readyStoryCount = 0,
   apiUnavailable = false,
+  activeFilter = 'all',
 }: {
   clusters: CompareCluster[]
   total?: number
@@ -23,12 +24,15 @@ export function ComparePageClient({
   activeSourceCount?: number
   readyStoryCount?: number
   apiUnavailable?: boolean
+  activeFilter?: string
 }) {
   const { dictionary } = useLanguage()
   const currentPage = Math.floor(offset / limit) + 1
   const hasPrevious = offset > 0
   const hasMore = offset + clusters.length < total
   const comparisonLabel = `${total.toLocaleString()} coverage ${total === 1 ? 'comparison' : 'comparisons'}`
+  const filterItems = ['all', 'somalia', 'world', 'politics', 'security', 'humanitarian', 'economy']
+  const filterLabel = activeFilter === 'all' ? 'all coverage' : activeFilter
 
   const emptyTitle = apiUnavailable
     ? 'Warka is waking up'
@@ -38,7 +42,9 @@ export function ComparePageClient({
   const emptyMessage = apiUnavailable
     ? 'The API did not respond just now. Free-tier hosting can take a moment to wake, so please try again shortly.'
     : readyStoryCount > 0
-      ? 'Stories have been collected, but Warka needs at least two related reports before comparison cards appear.'
+      ? activeFilter === 'all'
+        ? 'Stories have been collected, but Warka needs at least two related reports before comparison cards appear.'
+        : `Stories exist, but no renderable ${filterLabel} comparison matched this filter yet.`
       : dictionary.compare.watchMessage
 
   if (clusters.length === 0) {
@@ -85,7 +91,7 @@ export function ComparePageClient({
             </div>
             <SectionHeader
               title={dictionary.pages.compare.title}
-              subtitle={`${comparisonLabel}. ${dictionary.pages.compare.subtitle}`}
+              subtitle={`${comparisonLabel} in ${filterLabel}. ${dictionary.pages.compare.subtitle}`}
               centered
             />
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -106,14 +112,22 @@ export function ComparePageClient({
               ))}
             </div>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {['All', 'Somalia', 'World', 'Politics', 'Security', 'Humanitarian', 'Economy'].map((item) => (
-                <span
+              {filterItems.map((item) => {
+                const isActive = item === activeFilter
+                const href = item === 'all' ? '/compare' : `/compare?filter=${item}`
+                return (
+                <Link
                   key={item}
-                  className="rounded-full border border-[#ded2c0] bg-white/70 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-ink/60 dark:border-white/10 dark:bg-[#182124] dark:text-[#d7d2ca]"
+                  href={href}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors ${
+                    isActive
+                      ? 'border-primary-300 bg-primary-100 text-primary-800 dark:border-primary-700 dark:bg-primary-900/30 dark:text-primary-100'
+                      : 'border-[#ded2c0] bg-white/70 text-ink/60 hover:bg-paper dark:border-white/10 dark:bg-[#182124] dark:text-[#d7d2ca]'
+                  }`}
                 >
-                  {item}
-                </span>
-              ))}
+                  {item === 'all' ? 'All' : item}
+                </Link>
+              )})}
             </div>
           </div>
         </div>
@@ -132,7 +146,10 @@ export function ComparePageClient({
               <div className="flex gap-3">
                 {hasPrevious ? (
                   <Link
-                    href={`/compare?page=${currentPage - 1}`}
+                    href={`/compare?${new URLSearchParams({
+                      ...(activeFilter === 'all' ? {} : { filter: activeFilter }),
+                      page: String(currentPage - 1),
+                    }).toString()}`}
                     className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#d8cab7] bg-white px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-ink transition-colors hover:bg-paper dark:border-white/10 dark:bg-[#182124] dark:text-[#fbf7f0]"
                   >
                     Previous
@@ -140,7 +157,10 @@ export function ComparePageClient({
                 ) : null}
                 {hasMore ? (
                   <Link
-                    href={`/compare?page=${currentPage + 1}`}
+                    href={`/compare?${new URLSearchParams({
+                      ...(activeFilter === 'all' ? {} : { filter: activeFilter }),
+                      page: String(currentPage + 1),
+                    }).toString()}`}
                     className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200"
                   >
                     Load more

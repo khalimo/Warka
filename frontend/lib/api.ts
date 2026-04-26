@@ -79,7 +79,8 @@ class ApiClient {
     offset = 0,
     hasAISynthesis?: boolean,
     aiReviewStatus?: string,
-    renderableOnly = true
+    renderableOnly = true,
+    filter?: string
   ): Promise<PaginatedResponse<CompareCluster> | null> {
     const params = new URLSearchParams({
       limit: String(limit),
@@ -91,6 +92,13 @@ class ApiClient {
     }
     if (aiReviewStatus) {
       params.set('ai_review_status', aiReviewStatus)
+    }
+    if (filter && filter !== 'all') {
+      if (filter === 'somalia' || filter === 'world') {
+        params.set('region', filter)
+      } else {
+        params.set('category', filter)
+      }
     }
     const result = await this.fetchJSON<PaginatedResponse<BackendCluster>>(
       `/api/clusters?${params.toString()}`

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import models
 from app.auth import require_internal_api_key
 from app.database import get_db
+from app.rate_limit import require_internal_rate_limit
 from app.repositories.cluster_repository import ClusterRepository
 from app.repositories.ingest_run_repository import IngestRunRepository
 from app.repositories.source_repository import SourceRepository
@@ -18,7 +19,7 @@ from app.utils.dates import utc_now
 router = APIRouter(
     prefix="/api/internal",
     tags=["operations"],
-    dependencies=[Depends(require_internal_api_key)],
+    dependencies=[Depends(require_internal_api_key), Depends(require_internal_rate_limit)],
 )
 
 

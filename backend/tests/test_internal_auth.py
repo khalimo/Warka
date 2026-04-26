@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.auth import require_internal_api_key
 from app.config import get_settings
+from app.rate_limit import clear_rate_limit_state, require_internal_rate_limit
 
 
 def _client() -> TestClient:
@@ -21,7 +22,9 @@ def _client() -> TestClient:
 @pytest.fixture(autouse=True)
 def clear_settings_cache() -> None:
     get_settings.cache_clear()
+    clear_rate_limit_state()
     yield
+    clear_rate_limit_state()
     get_settings.cache_clear()
 
 
@@ -78,3 +81,27 @@ def test_ingest_route_without_key_returns_401(monkeypatch: pytest.MonkeyPatch) -
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid internal API key"
+
+
+def test_internal_rate_limit_returns_429(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///test.db")
+    monkeypatch.setenv("INTERNAL_API_KEY", "correct-secret")
+    monkeypatch.setenv("INTERNAL_RATE_LIMIT_PER_MINUTE", "2")
+
+    app = FastAPI()
+
+    @app.get(
+        "/limited",
+        dependencies=[Depends(require_internal_api_key), Depends(require_internal_rate_limit)],
+    )
+    def limited() -> dict[str, str]:
+        return {"status": "ok"}
+
+    client = TestClient(app)
+
+    assert client.get("/limited", headers={"X-Internal-API-Key": "correct-secret"}).status_code == 200
+    assert client.get("/limited", headers={"X-Internal-API-Key": "correct-secret"}).status_code == 200
+    response = client.get("/limited", headers={"X-Internal-API-Key": "correct-secret"})
+
+    assert response.status_code == 429
+    assert response.json()["detail"] == "Too many internal requests; try again soon"

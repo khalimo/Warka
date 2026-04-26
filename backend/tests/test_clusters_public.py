@@ -65,6 +65,7 @@ def _story(
     source: models.Source,
     published_at: datetime,
     cluster: models.Cluster | None = None,
+    category: str = "politics",
 ) -> models.Story:
     return models.Story(
         slug=slug,
@@ -77,7 +78,7 @@ def _story(
         published_at=published_at,
         fetched_at=published_at,
         region="somalia",
-        category="politics",
+        category=category,
         topics=["somalia"],
         translations={},
         is_breaking=False,
@@ -117,7 +118,7 @@ def _seed_cluster_data(session: Session) -> None:
         _story("hero", source_a, now - timedelta(minutes=20), renderable),
         _story("related", source_b, now - timedelta(minutes=30), renderable),
         _story("older-a", source_a, now - timedelta(hours=4), older_renderable),
-        _story("older-b", source_c, now - timedelta(hours=5), older_renderable),
+        _story("older-b", source_c, now - timedelta(hours=5), older_renderable, category="economy"),
         _story("single", source_a, now - timedelta(minutes=10), newest_not_renderable),
     ]
 
@@ -146,6 +147,10 @@ def test_home_returns_renderable_compare_clusters(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["compare_preview"]["id"] == "renderable"
+    assert body["diagnostics"]["story_count"] == 5
+    assert body["diagnostics"]["active_source_count"] == 3
+    assert body["diagnostics"]["total_cluster_count"] == 4
+    assert body["diagnostics"]["renderable_cluster_count"] == 2
     assert [cluster["id"] for cluster in body["compare_clusters"]] == [
         "renderable",
         "older-renderable",
@@ -176,3 +181,31 @@ def test_clusters_can_return_all_clusters_for_internal_tooling(client: TestClien
         "renderable",
         "older-renderable",
     }
+
+
+def test_clusters_can_filter_by_category(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&category=politics")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 2
+    assert [cluster["id"] for cluster in body["items"]] == [
+        "renderable",
+        "older-renderable",
+    ]
+
+
+def test_clusters_unknown_filter_is_ignored(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&category=unknown")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 2
+
+
+def test_clusters_filter_uses_any_matching_story_after_renderability(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&category=economy")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == "older-renderable"

@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str
     internal_api_key: str = ""
+    internal_rate_limit_per_minute: int = 30
     openai_api_key: str = ""
     enable_openai: bool = False
     enable_ai_synthesis: bool = False

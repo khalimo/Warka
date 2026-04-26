@@ -88,9 +88,18 @@ export interface HomePageData {
   secondaryStories: Story[]
   comparePreview: CompareCluster | null
   compareClusters: CompareCluster[]
+  diagnostics: HomeDiagnostics
   latestStories: Story[]
   somaliaStories: Story[]
   worldStories: Story[]
+}
+
+export interface HomeDiagnostics {
+  storyCount: number
+  activeSourceCount: number
+  totalClusterCount: number
+  renderableClusterCount: number
+  latestClusterCreatedAt?: string
 }
 
 export interface PaginatedResponse<T> {
@@ -203,9 +212,18 @@ export interface BackendHomePageData {
   secondary_stories: BackendStory[]
   compare_preview: BackendCluster | null
   compare_clusters?: BackendCluster[] | null
+  diagnostics?: BackendHomeDiagnostics | null
   latest_stories: BackendStory[]
   somalia_stories: BackendStory[]
   world_stories: BackendStory[]
+}
+
+export interface BackendHomeDiagnostics {
+  story_count?: number
+  active_source_count?: number
+  total_cluster_count?: number
+  renderable_cluster_count?: number
+  latest_cluster_created_at?: string | null
 }
 
 export interface BackendIngestRun {
