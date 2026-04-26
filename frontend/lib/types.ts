@@ -87,6 +87,7 @@ export interface HomePageData {
   heroStory: Story
   secondaryStories: Story[]
   comparePreview: CompareCluster | null
+  compareClusters: CompareCluster[]
   latestStories: Story[]
   somaliaStories: Story[]
   worldStories: Story[]
@@ -169,8 +170,8 @@ export interface BackendCluster {
   story_count?: number
   confidence_score?: number | null
   event_signature?: CompareCluster['eventSignature'] | null
-  stories: BackendStory[]
-  sources: BackendSource[]
+  stories?: BackendStory[] | null
+  sources?: BackendSource[] | null
 }
 
 export interface AIReviewUpdatePayload {
@@ -201,6 +202,7 @@ export interface BackendHomePageData {
   hero_story: BackendStory
   secondary_stories: BackendStory[]
   compare_preview: BackendCluster | null
+  compare_clusters?: BackendCluster[] | null
   latest_stories: BackendStory[]
   somalia_stories: BackendStory[]
   world_stories: BackendStory[]

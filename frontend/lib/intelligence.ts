@@ -35,7 +35,7 @@ export function getBriefingStats(homeData: HomePageData, dictionary: UIStrings) 
   ]
   const sources = uniqueSources(stories)
   const breakingStories = stories.filter((story) => story.isBreaking)
-  const compareCount = homeData.comparePreview ? 1 : 0
+  const compareCount = homeData.compareClusters.length || (homeData.comparePreview ? 1 : 0)
   const importantCount = Math.min(5, new Set(stories.map((story) => story.id)).size)
 
   return [

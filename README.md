@@ -4,7 +4,8 @@ Warka is now a split-stack Somali news product:
 
 - `frontend/` is the active public reader site built with Next.js.
 - `backend/` is the active FastAPI JSON API for ingestion, clustering, source health, and story delivery.
-- `app.py` is the older Streamlit product. It is retained as legacy reference code and should not be used for the active public deployment.
+- `app.py` is the older Streamlit product. It is retained as legacy reference code and must not be used for the active public deployment.
+- Root `render.yaml`, while Streamlit-oriented, is legacy deployment configuration unless it is updated to point at the `backend/` FastAPI service.
 
 For the current production deployment, use:
 
@@ -15,7 +16,7 @@ database  -> Render Postgres
 DNS       -> Cloudflare
 ```
 
-See [DEPLOYMENT.md](</Users/tem/Documents/New project/DEPLOYMENT.md>) for the production runbook.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the production runbook.
 
 ## Legacy Streamlit App
 

@@ -1,9 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 
-import { apiClient } from '@/lib/api'
 import { AIReviewUpdatePayload, CompareCluster } from '@/lib/types'
 
 const REVIEW_STATES: AIReviewUpdatePayload['reviewStatus'][] = [
@@ -19,7 +17,6 @@ type Props = {
 }
 
 export function AIReviewControls({ cluster }: Props) {
-  const router = useRouter()
   const [reviewStatus, setReviewStatus] = useState<AIReviewUpdatePayload['reviewStatus']>(
     cluster.aiReviewStatus || 'unreviewed'
   )
@@ -27,36 +24,8 @@ export function AIReviewControls({ cluster }: Props) {
     cluster.aiReviewStatus || 'unreviewed'
   )
   const [reviewNote, setReviewNote] = useState(cluster.aiReviewNote || '')
-  const [savedAt, setSavedAt] = useState(cluster.aiReviewedAt || '')
-  const [isSaving, setIsSaving] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
 
   const remaining = useMemo(() => 500 - reviewNote.length, [reviewNote.length])
-
-  async function handleSave() {
-    setIsSaving(true)
-    setMessage('')
-    setError('')
-
-    const result = await apiClient.updateClusterAIReview(cluster.id, {
-      reviewStatus,
-      reviewNote: reviewNote.trim() || undefined,
-    })
-
-    setIsSaving(false)
-    if (!result) {
-      setError('We could not save this review just now.')
-      return
-    }
-
-    setReviewStatus(result.aiReviewStatus)
-    setSavedStatus(result.aiReviewStatus)
-    setReviewNote(result.aiReviewNote || '')
-    setSavedAt(result.aiReviewedAt || '')
-    setMessage('Review saved.')
-    router.refresh()
-  }
 
   return (
     <section className="border-t border-gray-200 bg-white px-6 py-5">
@@ -109,21 +78,16 @@ export function AIReviewControls({ cluster }: Props) {
         <div className="space-y-3">
           <button
             type="button"
-            onClick={handleSave}
-            disabled={isSaving}
+            disabled
             className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            {isSaving ? 'Saving...' : 'Save review'}
+            Saving disabled
           </button>
 
           <div className="min-h-[2.5rem] text-sm">
-            {message ? <div className="text-green-700">{message}</div> : null}
-            {error ? <div className="text-red-700">{error}</div> : null}
-            {!message && !error ? (
-              <div className="text-gray-600">
-                {savedAt ? `Last reviewed at ${new Date(savedAt).toLocaleString()}` : 'No review saved yet.'}
-              </div>
-            ) : null}
+            <div className="text-gray-600">
+              Admin writes are disabled in the public frontend until proper authentication is added.
+            </div>
           </div>
         </div>
       </div>

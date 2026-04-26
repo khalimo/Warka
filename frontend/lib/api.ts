@@ -1,25 +1,16 @@
 import {
-  AIReviewUpdatePayload,
-  AIReviewUpdateResponse,
-  BackendAIReviewUpdatePayload,
-  BackendAIReviewUpdateResponse,
   BackendCluster,
   BackendHomePageData,
-  BackendOperationsSummary,
   BackendSource,
   BackendStory,
   CompareCluster,
   HomePageData,
-  OperationsSummary,
   PaginatedResponse,
   Source,
   Story,
 } from './types'
 import {
-  mapAIReviewUpdateResponse,
-  mapCluster,
   mapHomePageData,
-  mapOperationsSummary,
   mapPaginatedClusters,
   mapPaginatedStories,
   mapSource,
@@ -87,11 +78,13 @@ class ApiClient {
     limit = 10,
     offset = 0,
     hasAISynthesis?: boolean,
-    aiReviewStatus?: string
+    aiReviewStatus?: string,
+    renderableOnly = true
   ): Promise<PaginatedResponse<CompareCluster> | null> {
     const params = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
+      renderable_only: String(renderableOnly),
     })
     if (typeof hasAISynthesis === 'boolean') {
       params.set('has_ai_synthesis', String(hasAISynthesis))
@@ -113,63 +106,6 @@ class ApiClient {
   async checkHealth(): Promise<boolean> {
     const result = await this.fetchJSON<{ status: string }>('/api/health')
     return result?.status === 'healthy' || result?.status === 'ok'
-  }
-
-  async getOperationsSummary(): Promise<OperationsSummary | null> {
-    const result = await this.fetchJSON<BackendOperationsSummary>('/api/internal/operations')
-    return result ? mapOperationsSummary(result) : null
-  }
-
-  async triggerIngestion(): Promise<{ id?: string; status?: string } | null> {
-    if (!API_BASE_URL) {
-      return null
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/ingest`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-        },
-      })
-      if (!response.ok) {
-        return null
-      }
-      return (await response.json()) as { id?: string; status?: string }
-    } catch (error) {
-      console.error('Ingestion failed:', error)
-      return null
-    }
-  }
-
-  async updateClusterAIReview(
-    clusterId: string,
-    payload: AIReviewUpdatePayload
-  ): Promise<AIReviewUpdateResponse | null> {
-    if (!API_BASE_URL) {
-      return null
-    }
-    const body: BackendAIReviewUpdatePayload = {
-      review_status: payload.reviewStatus,
-      review_note: payload.reviewNote,
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/internal/clusters/${clusterId}/ai-review`, {
-        method: 'PATCH',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-      if (!response.ok) {
-        return null
-      }
-      const result = (await response.json()) as BackendAIReviewUpdateResponse
-      return mapAIReviewUpdateResponse(result)
-    } catch (error) {
-      console.error('Updating AI review failed:', error)
-      return null
-    }
   }
 }
 

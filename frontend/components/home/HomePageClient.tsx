@@ -32,6 +32,18 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
   }
 
   const latestBrief = homeData.latestStories.filter((story) => story.id !== homeData.heroStory.id).slice(0, 3)
+  const compareClusters = homeData.compareClusters.length > 0
+    ? homeData.compareClusters
+    : homeData.comparePreview
+      ? [homeData.comparePreview]
+      : []
+  const sourceCount = new Set([
+    homeData.heroStory.source.id,
+    ...homeData.latestStories.map((story) => story.source.id),
+    ...homeData.somaliaStories.map((story) => story.source.id),
+    ...homeData.worldStories.map((story) => story.source.id),
+    ...compareClusters.flatMap((cluster) => cluster.sources.map((source) => source.id)),
+  ]).size
   const coverageRails = [
     { key: 'humanitarian', label: lang === 'so' ? 'Bini’aadannimo' : 'Humanitarian' },
     { key: 'diaspora', label: lang === 'so' ? 'Qurbajoog' : 'Diaspora' },
@@ -61,6 +73,24 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
             </p>
           </div>
 
+          <div className="mb-8 grid gap-3 sm:grid-cols-3">
+            {[
+              ['Active sources', sourceCount],
+              ['Latest stories', homeData.latestStories.length],
+              ['Coverage comparisons', compareClusters.length],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-editorial border border-[#ded2c0] bg-white/75 px-4 py-4 dark:border-white/10 dark:bg-[#182124]"
+              >
+                <div className="font-serif text-3xl font-bold text-ink dark:text-[#fbf7f0]">{value}</div>
+                <div className="mt-1 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink/48 dark:text-[#b7b1a8]">
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_22rem] xl:gap-10">
             <HeroStoryCard story={homeData.heroStory} />
 
@@ -88,12 +118,28 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
           title={dictionary.sections.compareCoverage}
           subtitle={dictionary.sections.compareCoverageSubtitle}
         />
-        {homeData.comparePreview ? (
-          <CompareClusterCard cluster={homeData.comparePreview} />
+        <div className="mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <p className="max-w-3xl text-sm leading-7 text-ink/70 dark:text-[#d8d2ca]">
+            Warka groups related reports so readers can see what different outlets agree on,
+            emphasize, or leave out.
+          </p>
+          <Link
+            href="/compare"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors duration-300 ease-editorial hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200 dark:hover:bg-primary-900/30"
+          >
+            View all comparisons
+          </Link>
+        </div>
+        {compareClusters.length > 0 ? (
+          <div className="space-y-6">
+            {compareClusters.slice(0, 3).map((cluster) => (
+              <CompareClusterCard key={cluster.id} cluster={cluster} />
+            ))}
+          </div>
         ) : (
           <EmptyState
-            title={dictionary.compare.noCoverageTitle}
-            message={dictionary.compare.noCoverageMessage}
+            title="Coverage comparisons are being prepared"
+            message={`Stories have been collected, but Warka needs at least two related reports before comparison cards appear. Current homepage sample: ${homeData.latestStories.length} stories from ${sourceCount} sources.`}
           />
         )}
       </section>
