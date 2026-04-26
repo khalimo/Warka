@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app import models
 
@@ -47,3 +48,7 @@ class IngestRunRepository:
         self.db.commit()
         self.db.refresh(run)
         return run
+
+    def latest(self) -> models.IngestRun | None:
+        stmt = select(models.IngestRun).order_by(models.IngestRun.started_at.desc()).limit(1)
+        return self.db.scalars(stmt).first()

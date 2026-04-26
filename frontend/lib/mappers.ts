@@ -3,10 +3,12 @@ import {
   BackendAIReviewUpdateResponse,
   BackendCluster,
   BackendHomePageData,
+  BackendOperationsSummary,
   BackendSource,
   BackendStory,
   CompareCluster,
   HomePageData,
+  OperationsSummary,
   PaginatedResponse,
   Source,
   Story,
@@ -202,5 +204,30 @@ export function mapAIReviewUpdateResponse(
     aiReviewStatus: response.ai_review_status,
     aiReviewNote: response.ai_review_note || undefined,
     aiReviewedAt: response.ai_reviewed_at || undefined,
+  }
+}
+
+export function mapOperationsSummary(summary: BackendOperationsSummary): OperationsSummary {
+  return {
+    status: summary.status,
+    generatedAt: summary.generated_at,
+    storyCount: summary.story_count,
+    clusterCount: summary.cluster_count,
+    sourceCount: summary.source_count,
+    activeSourceCount: summary.active_source_count,
+    translatedStorySampleCount: summary.translated_story_sample_count,
+    latestIngestRun: summary.latest_ingest_run
+      ? {
+          id: summary.latest_ingest_run.id,
+          startedAt: summary.latest_ingest_run.started_at,
+          completedAt: summary.latest_ingest_run.completed_at || undefined,
+          status: summary.latest_ingest_run.status,
+          processedCount: summary.latest_ingest_run.processed_count,
+          insertedCount: summary.latest_ingest_run.inserted_count,
+          skippedCount: summary.latest_ingest_run.skipped_count,
+          errorCount: summary.latest_ingest_run.error_count,
+        }
+      : undefined,
+    sourceHealth: summary.source_health,
   }
 }

@@ -192,3 +192,59 @@ export interface BackendHomePageData {
   somalia_stories: BackendStory[]
   world_stories: BackendStory[]
 }
+
+export interface BackendIngestRun {
+  id: string
+  started_at: string
+  completed_at?: string | null
+  status: string
+  processed_count: number
+  inserted_count: number
+  updated_count: number
+  skipped_count: number
+  error_count: number
+  details_json?: Record<string, unknown>
+}
+
+export interface BackendOperationsSummary {
+  status: string
+  generated_at: string
+  story_count: number
+  cluster_count: number
+  source_count: number
+  active_source_count: number
+  translated_story_sample_count: number
+  latest_ingest_run?: BackendIngestRun | null
+  source_health: Array<{
+    id: string
+    name: string
+    is_enabled: boolean
+    category?: string | null
+    language?: string | null
+    validation_status?: string | null
+    stories_ingested_24h?: number
+    health_score?: number
+    last_error?: string | null
+  }>
+}
+
+export interface OperationsSummary {
+  status: string
+  generatedAt: string
+  storyCount: number
+  clusterCount: number
+  sourceCount: number
+  activeSourceCount: number
+  translatedStorySampleCount: number
+  latestIngestRun?: {
+    id: string
+    startedAt: string
+    completedAt?: string
+    status: string
+    processedCount: number
+    insertedCount: number
+    skippedCount: number
+    errorCount: number
+  }
+  sourceHealth: BackendOperationsSummary['source_health']
+}

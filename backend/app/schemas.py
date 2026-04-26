@@ -129,6 +129,18 @@ class IngestRun(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OperationsSummary(BaseModel):
+    status: str
+    generated_at: datetime
+    story_count: int
+    cluster_count: int
+    source_count: int
+    active_source_count: int
+    translated_story_sample_count: int
+    latest_ingest_run: Optional[IngestRun] = None
+    source_health: list[dict[str, Any]] = Field(default_factory=list)
+
+
 class AIReviewUpdateRequest(BaseModel):
     review_status: str
     review_note: Optional[str] = None

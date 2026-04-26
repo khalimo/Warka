@@ -5,10 +5,12 @@ import {
   BackendAIReviewUpdateResponse,
   BackendCluster,
   BackendHomePageData,
+  BackendOperationsSummary,
   BackendSource,
   BackendStory,
   CompareCluster,
   HomePageData,
+  OperationsSummary,
   PaginatedResponse,
   Source,
   Story,
@@ -17,6 +19,7 @@ import {
   mapAIReviewUpdateResponse,
   mapCluster,
   mapHomePageData,
+  mapOperationsSummary,
   mapPaginatedClusters,
   mapPaginatedStories,
   mapSource,
@@ -110,6 +113,11 @@ class ApiClient {
   async checkHealth(): Promise<boolean> {
     const result = await this.fetchJSON<{ status: string }>('/api/health')
     return result?.status === 'healthy' || result?.status === 'ok'
+  }
+
+  async getOperationsSummary(): Promise<OperationsSummary | null> {
+    const result = await this.fetchJSON<BackendOperationsSummary>('/api/internal/operations')
+    return result ? mapOperationsSummary(result) : null
   }
 
   async triggerIngestion(): Promise<{ id?: string; status?: string } | null> {

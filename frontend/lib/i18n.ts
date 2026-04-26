@@ -179,6 +179,12 @@ export const ui = {
       unavailableHelper:
         'A stored translation is not available yet, so Warka is showing the original article text.',
     },
+    filters: {
+      searchLatest: 'Search latest stories',
+      searchSection: 'Search section',
+      allLanguages: 'All languages',
+      allCoverage: 'All coverage',
+    },
     compare: {
       kicker: 'Signature feature',
       reportLabel: 'Coverage lens',
@@ -396,6 +402,12 @@ export const ui = {
         'Waxaad akhrinaysaa turjumaad mashiin oo kaydsan. Xigashada asalka iyo xiriirka isha way muuqdaan.',
       unavailableHelper:
         'Turjumaad kaydsan weli lama hayo, sidaas darteed Warka waxa uu muujinayaa qoraalka asalka ah.',
+    },
+    filters: {
+      searchLatest: 'Raadi wararka ugu dambeeyay',
+      searchSection: 'Raadi qaybta',
+      allLanguages: 'Dhammaan luqadaha',
+      allCoverage: 'Dhammaan daboolidda',
     },
     compare: {
       kicker: 'Astaanta gaarka ah',

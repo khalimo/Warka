@@ -7,7 +7,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import routes_clusters, routes_health, routes_home, routes_ingest, routes_sources, routes_stories
+from app.api import (
+    routes_clusters,
+    routes_health,
+    routes_home,
+    routes_ingest,
+    routes_operations,
+    routes_sources,
+    routes_stories,
+)
 from app.config import get_settings
 from app.database import SessionLocal
 from app.logging_config import configure_logging
@@ -56,3 +64,4 @@ app.include_router(routes_stories.router)
 app.include_router(routes_clusters.router)
 app.include_router(routes_sources.router)
 app.include_router(routes_ingest.router)
+app.include_router(routes_operations.router)
