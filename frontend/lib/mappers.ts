@@ -158,6 +158,8 @@ export function mapCluster(cluster: BackendCluster): CompareCluster {
     createdAt: cluster.created_at || undefined,
     updatedAt: cluster.updated_at || undefined,
     storyCount: cluster.story_count || undefined,
+    confidenceScore: cluster.confidence_score ?? undefined,
+    eventSignature: cluster.event_signature || undefined,
     stories: cluster.stories.map(mapStory),
     sources: cluster.sources.map(mapSource),
   }

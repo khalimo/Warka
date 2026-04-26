@@ -89,6 +89,8 @@ def map_cluster_to_response(db_cluster: models.Cluster) -> schemas.Cluster:
         ai_review_note=db_cluster.ai_review_note,
         ai_reviewed_at=db_cluster.ai_reviewed_at,
         story_count=db_cluster.story_count,
+        confidence_score=db_cluster.confidence_score or 0,
+        event_signature=dict(db_cluster.event_signature or {}),
         created_at=db_cluster.created_at,
         updated_at=db_cluster.updated_at,
         stories=story_items,

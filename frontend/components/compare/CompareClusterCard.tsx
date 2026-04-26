@@ -25,6 +25,15 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
   const summary = cluster.aiNeutralSummary || cluster.neutralSummary || cluster.commonFacts
   const differences = cluster.aiCoverageDifferences || cluster.coverageDifferences || dictionary.compare.developing
   const sourceStats = getCompareSourceStats(cluster, dictionary)
+  const confidence = cluster.confidenceScore ?? cluster.eventSignature?.confidence ?? 0
+  const eventTerms = (cluster.eventSignature?.event_terms || cluster.keyThemes || []).slice(0, 5)
+  const timeWindow = cluster.eventSignature?.temporal_span_hours
+  const confidenceTone =
+    confidence >= 75
+      ? 'border-emerald-500/30 bg-emerald-50 text-emerald-800 dark:border-emerald-300/20 dark:bg-emerald-300/10 dark:text-emerald-100'
+      : confidence >= 50
+        ? 'border-acacia/30 bg-acacia/10 text-acacia dark:border-acacia/20 dark:bg-acacia/10 dark:text-acacia'
+        : 'border-[#ded2c0] bg-paper/70 text-ink/72 dark:border-white/10 dark:bg-[#141d1f] dark:text-[#d9d3ca]'
 
   return (
     <div className="overflow-hidden rounded-editorial border border-[#dccfbe] bg-white/92 shadow-lift transition duration-300 ease-editorial hover:shadow-editorial dark:border-white/10 dark:bg-[#182124]">
@@ -38,7 +47,7 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
         <h3 className="text-[1.45rem] font-bold leading-tight text-ink dark:text-[#fbf7f0] sm:text-2xl">{cluster.title}</h3>
 
         <div className="mt-5 space-y-4 sm:mt-6 sm:space-y-5">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {sourceStats.map((item) => (
               <div
                 key={item.label}
@@ -52,6 +61,16 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
                 </div>
               </div>
             ))}
+            <div
+              className={`rounded-editorial border px-4 py-3 ${confidenceTone}`}
+            >
+              <div className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] opacity-70">
+                {dictionary.compare.clusterConfidence}
+              </div>
+              <div className="mt-1 font-serif text-[1.35rem] font-bold leading-none">
+                {confidence || 'New'}
+              </div>
+            </div>
           </div>
 
           <div className="rounded-editorial border border-acacia/25 bg-acacia/10 p-4 dark:border-acacia/20 dark:bg-acacia/10">
@@ -92,13 +111,39 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
             </div>
 
             <div>
-              <h4 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-ink/60 dark:text-[#bbb4ab]">
-                {dictionary.compare.trustTitle}
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {cluster.sources.map((source) => (
-                  <SourceBadge key={source.id} source={source} size="sm" />
-                ))}
+              <div className="space-y-4">
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-ink/60 dark:text-[#bbb4ab]">
+                    {dictionary.compare.trustTitle}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {cluster.sources.map((source) => (
+                      <SourceBadge key={source.id} source={source} size="sm" />
+                    ))}
+                  </div>
+                </div>
+                {eventTerms.length > 0 || typeof timeWindow === 'number' ? (
+                  <div>
+                    <h4 className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-ink/60 dark:text-[#bbb4ab]">
+                      {dictionary.compare.eventSignals}
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {eventTerms.map((term) => (
+                        <span
+                          key={term}
+                          className="rounded-full border border-[#ded2c0] bg-paper/70 px-2.5 py-1 text-xs font-semibold text-ink/68 dark:border-white/10 dark:bg-[#141d1f] dark:text-[#d9d3ca]"
+                        >
+                          {term}
+                        </span>
+                      ))}
+                      {typeof timeWindow === 'number' ? (
+                        <span className="rounded-full border border-[#ded2c0] bg-paper/70 px-2.5 py-1 text-xs font-semibold text-ink/68 dark:border-white/10 dark:bg-[#141d1f] dark:text-[#d9d3ca]">
+                          {dictionary.compare.timeWindow}: {timeWindow}h
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

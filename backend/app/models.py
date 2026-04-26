@@ -66,6 +66,8 @@ class Cluster(Base):
     ai_review_note: Mapped[Optional[str]] = mapped_column(Text)
     ai_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     story_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    confidence_score: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    event_signature: Mapped[dict[str, Any]] = mapped_column(JsonType, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

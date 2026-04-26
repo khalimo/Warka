@@ -70,6 +70,17 @@ export interface CompareCluster {
   createdAt?: string
   updatedAt?: string
   storyCount?: number
+  confidenceScore?: number
+  eventSignature?: {
+    method?: string
+    confidence?: number
+    components?: Record<string, number>
+    entities?: string[]
+    event_terms?: string[]
+    source_count?: number
+    languages?: string[]
+    temporal_span_hours?: number
+  }
 }
 
 export interface HomePageData {
@@ -156,6 +167,8 @@ export interface BackendCluster {
   created_at?: string
   updated_at?: string | null
   story_count?: number
+  confidence_score?: number | null
+  event_signature?: CompareCluster['eventSignature'] | null
   stories: BackendStory[]
   sources: BackendSource[]
 }

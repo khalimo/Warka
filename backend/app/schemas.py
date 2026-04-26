@@ -81,6 +81,8 @@ class Cluster(BaseModel):
     ai_review_note: Optional[str] = None
     ai_reviewed_at: Optional[datetime] = None
     story_count: int = 0
+    confidence_score: int = 0
+    event_signature: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime
     updated_at: Optional[datetime] = None
     stories: list[Story] = Field(default_factory=list)
