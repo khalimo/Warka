@@ -37,6 +37,11 @@ export function SiteFooter() {
                   {dictionary.sections.compareCoverage}
                 </Link>
               </li>
+              <li>
+                <Link href="/sources" className="editorial-link hover:text-white">
+                  {dictionary.nav.sources}
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -50,7 +55,7 @@ export function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="editorial-link hover:text-white">
+                <Link href="/sources" className="editorial-link hover:text-white">
                   {dictionary.footer.transparency}
                 </Link>
               </li>

@@ -14,6 +14,7 @@ const navigation = [
   { key: 'somalia', href: '/somalia' },
   { key: 'world', href: '/world' },
   { key: 'compare', href: '/compare' },
+  { key: 'sources', href: '/sources' },
   { key: 'about', href: '/about' },
 ] as const
 

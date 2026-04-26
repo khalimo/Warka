@@ -8,6 +8,8 @@ export interface Source {
   description: string
   language?: string
   country?: string
+  isActive?: boolean
+  lastSuccessAt?: string
 }
 
 export interface Framing {
@@ -95,6 +97,8 @@ export interface BackendSource {
   description: string
   language?: string | null
   country?: string | null
+  is_active?: boolean
+  last_success_at?: string | null
 }
 
 export interface BackendFraming {

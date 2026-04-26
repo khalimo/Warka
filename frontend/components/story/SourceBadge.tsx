@@ -13,12 +13,19 @@ export function SourceBadge({ source, size = 'md' }: SourceBadgeProps) {
       ? 'gap-1.5 px-2.5 py-1 text-[0.68rem] tracking-[0.12em]'
       : 'gap-2 px-3 py-1.5 text-[0.72rem] tracking-[0.14em]'
 
+  const category = source.category || ''
   const accent =
-    source.category === 'international'
+    category.includes('international') || category.includes('africa')
       ? 'bg-sky/70'
-      : source.category === 'somali_regional'
+      : category.includes('regional') || category.includes('puntland') || category.includes('somaliland')
         ? 'bg-acacia/80'
-        : 'bg-primary-500'
+        : category.includes('humanitarian')
+          ? 'bg-red-400'
+          : category.includes('diaspora')
+            ? 'bg-purple-400'
+            : category.includes('official')
+              ? 'bg-ink/70'
+              : 'bg-primary-500'
 
   return (
     <span

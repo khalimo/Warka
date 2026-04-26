@@ -53,6 +53,7 @@ export const ui = {
       somalia: 'Somalia',
       world: 'World',
       compare: 'Compare',
+      sources: 'Sources',
       about: 'About',
     },
     languages: {
@@ -91,6 +92,11 @@ export const ui = {
       somaliaSubtitle: 'Politics, security, economy, and public life from across the country.',
       world: 'World',
       worldSubtitle: 'International developments with direct relevance to Somali readers.',
+      coverageRails: 'Coverage Rails',
+      coverageRailsSubtitle:
+        'Focused lanes for humanitarian, diaspora, and economy reporting as the source network fills in.',
+      sourcePulse: 'Source Pulse',
+      sourcePulseSubtitle: 'See which outlets Warka is monitoring and how coverage is labelled.',
     },
     pages: {
       latest: {
@@ -137,6 +143,18 @@ export const ui = {
         independenceBody:
           'Warka does not sell coverage or hide attribution. Selection is guided by relevance, credibility, and reader usefulness.',
       },
+      sources: {
+        title: 'Sources',
+        subtitle:
+          'The active outlets Warka monitors, with language, coverage type, and transparency signals kept visible.',
+        activeSources: 'active sources',
+        languages: 'languages',
+        categories: 'coverage types',
+        lastUpdated: 'Last successful update',
+        noUpdate: 'Not recorded yet',
+        emptyTitle: 'No active sources found',
+        emptyMessage: 'Source verification may still be running.',
+      },
       story: {
         summaryTitle: 'Summary',
         readOriginalPrefix: 'Read the original story on',
@@ -149,6 +167,17 @@ export const ui = {
       languageLabel: 'Language',
       noImage: 'No image',
       readMore: 'Read more',
+    },
+    translation: {
+      original: 'Original',
+      translated: 'Translated',
+      unavailable: 'Original shown',
+      helper: 'Article language and translation status',
+      originalHelper: 'You are reading this article in its original language.',
+      translatedHelper:
+        'You are reading a stored machine translation. Original attribution remains visible and the source link is preserved.',
+      unavailableHelper:
+        'A stored translation is not available yet, so Warka is showing the original article text.',
     },
     compare: {
       kicker: 'Signature feature',
@@ -166,6 +195,12 @@ export const ui = {
       developing: 'This story is still developing across the reporting set.',
       noCoverageTitle: 'Compare coverage is warming up',
       noCoverageMessage: 'A multi-source comparison will appear here as matching stories arrive.',
+      watchTitle: 'Coverage watch',
+      watchMessage:
+        'Warka is monitoring active sources. Comparisons appear once two or more outlets cover the same issue.',
+      activeSources: 'Active sources',
+      scannedStories: 'Stories ready',
+      waitingTopics: 'Developing topics',
     },
     storyTrust: {
       keyPoints: 'What to know',
@@ -235,6 +270,7 @@ export const ui = {
       somalia: 'Soomaaliya',
       world: 'Caalamka',
       compare: 'Isbarbardhig',
+      sources: 'Ilaha',
       about: 'Ku Saabsan',
     },
     languages: {
@@ -273,6 +309,11 @@ export const ui = {
       somaliaSubtitle: 'Siyaasad, amni, dhaqaale, iyo nolol bulsho oo dalka oo dhan laga soo tebiyey.',
       world: 'Caalamka',
       worldSubtitle: 'Horumarro caalami ah oo saamayn toos ah ku leh akhristaha Soomaaliyeed.',
+      coverageRails: 'Jidadka Daboolidda',
+      coverageRailsSubtitle:
+        'Qaybo diiradda saaraya bini’aadannimo, qurbajoog, iyo dhaqaale marka ilaha wararku buuxsamaan.',
+      sourcePulse: 'Garaaca Ilaha',
+      sourcePulseSubtitle: 'Arag warbaahinta Warka la socoto iyo sida daboolidda loo calaamadeeyo.',
     },
     pages: {
       latest: {
@@ -320,6 +361,18 @@ export const ui = {
         independenceBody:
           'Warka ma iibiso daboolid mana qarisid ilaha. Doorashadu waxa hagaya muhiimad, sumcad, iyo waxtarka akhristaha.',
       },
+      sources: {
+        title: 'Ilaha',
+        subtitle:
+          'Warbaahinta firfircoon ee Warka la socoto, iyadoo muuqata luqadda, nooca daboolidda, iyo calaamadaha hufnaanta.',
+        activeSources: 'ilo firfircoon',
+        languages: 'luqado',
+        categories: 'noocyada daboolidda',
+        lastUpdated: 'Cusboonaysiintii ugu dambaysay',
+        noUpdate: 'Weli lama diiwaangelin',
+        emptyTitle: 'Ilo firfircoon lama helin',
+        emptyMessage: 'Xaqiijinta ilaha ayaa laga yaabaa inay wali socoto.',
+      },
       story: {
         summaryTitle: 'Soo koobid',
         readOriginalPrefix: 'Ka akhri sheekada asalka ah',
@@ -332,6 +385,17 @@ export const ui = {
       languageLabel: 'Luqad',
       noImage: 'Sawir ma jiro',
       readMore: 'Akhriso',
+    },
+    translation: {
+      original: 'Asal',
+      translated: 'Turjuman',
+      unavailable: 'Asal muuqda',
+      helper: 'Luqadda maqaalka iyo xaaladda turjumaadda',
+      originalHelper: 'Waxaad maqaalka ku akhrinaysaa luqaddiisii asalka ahayd.',
+      translatedHelper:
+        'Waxaad akhrinaysaa turjumaad mashiin oo kaydsan. Xigashada asalka iyo xiriirka isha way muuqdaan.',
+      unavailableHelper:
+        'Turjumaad kaydsan weli lama hayo, sidaas darteed Warka waxa uu muujinayaa qoraalka asalka ah.',
     },
     compare: {
       kicker: 'Astaanta gaarka ah',
@@ -349,6 +413,12 @@ export const ui = {
       developing: 'Sheekadan weli si kala duwan ayaa looga sii warramayaa.',
       noCoverageTitle: 'Qaybta isbarbardhiggu way soo diyaaraysaa',
       noCoverageMessage: 'Isbarbardhig ilo badan leh ayaa halkan kasoo muuqan doona marka sheekooyin is-waafaqsan soo galaan.',
+      watchTitle: 'La socodka daboolidda',
+      watchMessage:
+        'Warka waxa uu la socdaa ilo firfircoon. Isbarbardhiggu wuu soo muuqdaa marka laba ilo ama ka badan ay ka warramaan arrin isku mid ah.',
+      activeSources: 'Ilo firfircoon',
+      scannedStories: 'Sheekooyin diyaar ah',
+      waitingTopics: 'Mawduucyo soo koraya',
     },
     storyTrust: {
       keyPoints: 'Waxa muhiimka ah',

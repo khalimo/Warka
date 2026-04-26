@@ -5,6 +5,7 @@ import { FramingBadge } from '@/components/story/FramingBadge'
 import { ReadingProgress } from '@/components/story/ReadingProgress'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
+import { StoryTranslationStatus } from '@/components/story/StoryTranslationStatus'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { getStorySummaryBullets, getStoryTrustSignals } from '@/lib/intelligence'
@@ -24,6 +25,7 @@ export function StoryPageClient({ story }: { story: Story }) {
         <div className="mx-auto max-w-[52rem]">
           <div className="mb-4 flex flex-wrap gap-2 sm:mb-5 sm:gap-3">
             <StoryLanguageBadge story={story} />
+            <StoryTranslationStatus story={story} />
             <SourceBadge source={story.source} />
             {story.framing ? <FramingBadge framing={story.framing} /> : null}
           </div>
@@ -44,6 +46,14 @@ export function StoryPageClient({ story }: { story: Story }) {
             <TimeAgo date={story.publishedAt} />
             <span className="hidden sm:inline">•</span>
             <span>{story.region}</span>
+          </div>
+
+          <div className="mb-8 rounded-editorial border border-[#d8cab7] bg-white/80 p-4 text-sm leading-6 text-ink/68 dark:border-white/10 dark:bg-[#182124] dark:text-[#d8d2ca]">
+            {story.lang === lang
+              ? dictionary.translation.originalHelper
+              : story.translations?.content?.[lang]
+                ? dictionary.translation.translatedHelper
+                : dictionary.translation.unavailableHelper}
           </div>
 
           <div className="mb-8 grid gap-4 sm:mb-10 lg:grid-cols-[minmax(0,1fr)_17rem]">

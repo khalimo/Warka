@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { CompareClusterCard } from '@/components/compare/CompareClusterCard'
 import { TodayBrief } from '@/components/home/TodayBrief'
 import { HeroStoryCard } from '@/components/story/HeroStoryCard'
@@ -12,7 +13,7 @@ import { useLanguage } from '@/components/language/LanguageProvider'
 import { HomePageData } from '@/lib/types'
 
 export function HomePageClient({ homeData }: { homeData: HomePageData | null }) {
-  const { dictionary } = useLanguage()
+  const { lang, dictionary } = useLanguage()
 
   if (!homeData) {
     return (
@@ -31,6 +32,16 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
   }
 
   const latestBrief = homeData.latestStories.filter((story) => story.id !== homeData.heroStory.id).slice(0, 3)
+  const coverageRails = [
+    { key: 'humanitarian', label: lang === 'so' ? 'Bini’aadannimo' : 'Humanitarian' },
+    { key: 'diaspora', label: lang === 'so' ? 'Qurbajoog' : 'Diaspora' },
+    { key: 'economy', label: lang === 'so' ? 'Dhaqaale' : 'Economy' },
+  ].map((rail) => ({
+    ...rail,
+    stories: homeData.latestStories
+      .filter((story) => story.category === rail.key || story.source.category === rail.key)
+      .slice(0, 2),
+  }))
 
   return (
     <div className="bg-paper dark:bg-[#141b1d]">
@@ -104,6 +115,38 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
       <section className="border-t news-divider py-12 md:py-16 xl:py-20">
         <div className="container-custom">
           <SectionHeader
+            title={dictionary.sections.coverageRails}
+            subtitle={dictionary.sections.coverageRailsSubtitle}
+          />
+          <div className="grid gap-5 lg:grid-cols-3">
+            {coverageRails.map((rail) => (
+              <div
+                key={rail.key}
+                className="section-surface overflow-hidden p-0"
+              >
+                <div className="border-b news-divider px-5 py-4">
+                  <div className="eyebrow">{rail.label}</div>
+                </div>
+                {rail.stories.length > 0 ? (
+                  <div className="divide-y divide-[#dfd4c3] dark:divide-white/10">
+                    {rail.stories.map((story) => (
+                      <StoryCardCompact key={story.id} story={story} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-5 py-6 text-sm leading-6 text-ink/60 dark:text-[#cfc8bf]">
+                    {dictionary.states.genericEmptyMessage}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t news-divider py-12 md:py-16 xl:py-20">
+        <div className="container-custom">
+          <SectionHeader
             title={dictionary.sections.somalia}
             subtitle={dictionary.sections.somaliaSubtitle}
           />
@@ -134,6 +177,27 @@ export function HomePageClient({ homeData }: { homeData: HomePageData | null }) 
           ) : (
             <EmptyState title={dictionary.states.noWorldTitle} message={dictionary.states.noWorldMessage} />
           )}
+        </div>
+      </section>
+
+      <section className="border-t news-divider py-12 md:py-16">
+        <div className="container-custom">
+          <div className="rounded-editorial border border-[#d8cab7] bg-white/80 p-6 dark:border-white/10 dark:bg-[#182124] sm:p-8">
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <div>
+                <div className="eyebrow">{dictionary.sections.sourcePulse}</div>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-ink/68 dark:text-[#d8d2ca]">
+                  {dictionary.sections.sourcePulseSubtitle}
+                </p>
+              </div>
+              <Link
+                href="/sources"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors duration-300 ease-editorial hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200 dark:hover:bg-primary-900/30"
+              >
+                {dictionary.nav.sources}
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>

@@ -96,6 +96,8 @@ export function mapSource(source: BackendSource): Source {
     description: source.description,
     language: source.language || undefined,
     country: source.country || undefined,
+    isActive: source.is_active,
+    lastSuccessAt: source.last_success_at || undefined,
   }
 }
 
