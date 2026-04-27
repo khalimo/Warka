@@ -6,18 +6,18 @@ import { ReadingProgress } from '@/components/story/ReadingProgress'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
 import { StoryTranslationStatus } from '@/components/story/StoryTranslationStatus'
+import { TranslationQualityReader } from '@/components/story/TranslationQualityReader'
 import { StoryTrustMethodologyPanel } from '@/components/trust/TrustMethodologyPanel'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { getStorySummaryBullets, getStoryTrustSignals } from '@/lib/intelligence'
-import { getStoryContent, getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
+import { getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
 import { Story } from '@/lib/types'
 
 export function StoryPageClient({ story }: { story: Story }) {
   const { lang, dictionary } = useLanguage()
   const summaryBullets = getStorySummaryBullets(story, lang, dictionary)
   const trustSignals = getStoryTrustSignals(story, dictionary)
-  const storyContent = getStoryContent(story, lang)
 
   return (
     <article className="bg-paper dark:bg-[#141b1d]">
@@ -47,14 +47,6 @@ export function StoryPageClient({ story }: { story: Story }) {
             <TimeAgo date={story.publishedAt} />
             <span className="hidden sm:inline">•</span>
             <span>{story.region}</span>
-          </div>
-
-          <div className="mb-8 rounded-editorial border border-[#d8cab7] bg-white/80 p-4 text-sm leading-6 text-ink/68 dark:border-white/10 dark:bg-[#182124] dark:text-[#d8d2ca]">
-            {story.lang === lang
-              ? dictionary.translation.originalHelper
-              : story.translations?.content?.[lang]
-                ? dictionary.translation.translatedHelper
-                : dictionary.translation.unavailableHelper}
           </div>
 
           <div className="mb-8 sm:mb-10">
@@ -116,12 +108,7 @@ export function StoryPageClient({ story }: { story: Story }) {
             </div>
           ) : null}
 
-          {storyContent ? (
-            <div
-              className="prose prose-base max-w-none prose-headings:font-serif prose-headings:text-ink prose-p:max-w-[44rem] prose-p:text-[1rem] prose-p:leading-7 prose-p:text-ink/78 prose-a:text-primary-700 prose-strong:text-ink prose-li:text-ink/78 dark:prose-headings:text-[#fbf7f0] dark:prose-p:text-[#ddd7ce] dark:prose-a:text-primary-200 dark:prose-strong:text-[#fbf7f0] dark:prose-li:text-[#ddd7ce] sm:prose-lg sm:prose-p:text-[1.06rem] sm:prose-p:leading-8"
-              dangerouslySetInnerHTML={{ __html: storyContent }}
-            />
-          ) : null}
+          <TranslationQualityReader story={story} />
 
           <div className="mt-12 border-t news-divider pt-7 sm:mt-14 sm:pt-8">
             <Link

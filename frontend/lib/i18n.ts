@@ -203,6 +203,32 @@ export const ui = {
         'You are reading a stored machine translation. Original attribution remains visible and the source link is preserved.',
       unavailableHelper:
         'A stored translation is not available yet, so Warka is showing the original article text.',
+      reader: {
+        kicker: 'Translation quality',
+        title: 'Read with translation transparency',
+        deck:
+          'Compare the source text with any stored machine translation. Warka keeps the original source visible and never marks a translation as reviewed unless that status exists in the data.',
+        sourceLink: 'Original source',
+        originalTab: 'Original',
+        translatedTab: 'Translation',
+        originalEyebrow: 'Original text',
+        translatedEyebrow: 'Machine translation',
+        originalText: 'Original text',
+        translatedText: 'Translated text',
+        originalLanguage: 'Original language',
+        machineTranslated: 'Machine translated',
+        confidence: 'Confidence',
+        reviewStatus: 'Review status',
+        confidenceUnavailable: 'Not recorded',
+        notHumanReviewed: 'Not marked as human-reviewed',
+        notAvailable: 'Unavailable',
+        translationUnavailable: 'Translation unavailable',
+        originalNote: 'This is the publisher’s original wording as collected by Warka.',
+        machineNote:
+          'This is a stored machine translation. Names, dates, and source attribution remain tied to the original report.',
+        unavailableNote:
+          'A stored translation is not available for this story yet, so the original text remains the trusted reading copy.',
+      },
     },
     filters: {
       searchLatest: 'Search latest stories',
@@ -542,6 +568,32 @@ export const ui = {
         'Waxaad akhrinaysaa turjumaad mashiin oo kaydsan. Xigashada asalka iyo xiriirka isha way muuqdaan.',
       unavailableHelper:
         'Turjumaad kaydsan weli lama hayo, sidaas darteed Warka waxa uu muujinayaa qoraalka asalka ah.',
+      reader: {
+        kicker: 'Tayada turjumaadda',
+        title: 'Ku akhri hufnaan turjumaad',
+        deck:
+          'Isbarbar dhig qoraalka asalka ah iyo turjumaad mashiin oo kaydsan haddii ay jirto. Warka waxa uu muuqdaa isha asalka ah, mana sheegayo in turjumaad la hubiyey haddii xogtu taas caddeyn.',
+        sourceLink: 'Isha asalka ah',
+        originalTab: 'Asalka',
+        translatedTab: 'Turjumaad',
+        originalEyebrow: 'Qoraalka asalka ah',
+        translatedEyebrow: 'Turjumaad mashiin',
+        originalText: 'Qoraalka asalka ah',
+        translatedText: 'Qoraalka turjuman',
+        originalLanguage: 'Luqadda asalka ah',
+        machineTranslated: 'Mashiin turjumay',
+        confidence: 'Kalsooni',
+        reviewStatus: 'Xaaladda hubinta',
+        confidenceUnavailable: 'Lama diiwaangelin',
+        notHumanReviewed: 'Looma calaamadin in bini’aadam hubiyey',
+        notAvailable: 'Lama hayo',
+        translationUnavailable: 'Turjumaad lama hayo',
+        originalNote: 'Kani waa qoraalka asalka ah ee daabacaha sida Warka u ururiyey.',
+        machineNote:
+          'Kani waa turjumaad mashiin oo kaydsan. Magacyada, taariikhaha, iyo xigashada isha waxay ku xiran yihiin warbixinta asalka ah.',
+        unavailableNote:
+          'Turjumaad kaydsan weli sheekadan looma hayo, sidaas darteed qoraalka asalka ah ayaa ah nuqulka lagu kalsoonaan karo.',
+      },
     },
     filters: {
       searchLatest: 'Raadi wararka ugu dambeeyay',
