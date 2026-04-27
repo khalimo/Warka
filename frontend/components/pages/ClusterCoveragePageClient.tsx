@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ShareLinkButton } from '@/components/share/ShareLinkButton'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
 import { ClusterTrustMethodologyPanel } from '@/components/trust/TrustMethodologyPanel'
@@ -88,6 +89,21 @@ export function ClusterCoveragePageClient({ cluster }: { cluster: CompareCluster
                     {summary}
                   </p>
                 ) : null}
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <ShareLinkButton
+                    path={`/compare/${encodeURIComponent(cluster.id)}`}
+                    title={cluster.title}
+                    summary={summary}
+                  />
+                  <Link
+                    href={`/compare/${encodeURIComponent(cluster.id)}/opengraph-image`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-[#d8cab7] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink transition-colors hover:bg-paper dark:border-white/10 dark:bg-[#141d1f] dark:text-[#fbf7f0] sm:px-5"
+                  >
+                    {dictionary.share.previewCard}
+                  </Link>
+                </div>
               </div>
 
               <aside className="section-surface p-5">

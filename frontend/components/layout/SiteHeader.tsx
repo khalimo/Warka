@@ -10,6 +10,7 @@ import { useLanguage } from '@/components/language/LanguageProvider'
 
 const navigation = [
   { key: 'home', href: '/' },
+  { key: 'briefing', href: '/briefing' },
   { key: 'latest', href: '/latest' },
   { key: 'somalia', href: '/somalia' },
   { key: 'world', href: '/world' },

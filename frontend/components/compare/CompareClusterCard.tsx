@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { CompareCluster } from '@/lib/types'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
+import { ShareLinkButton } from '@/components/share/ShareLinkButton'
 import { ClusterTrustMethodologyPanel } from '@/components/trust/TrustMethodologyPanel'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { getCompareSourceStats } from '@/lib/intelligence'
@@ -151,12 +152,19 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
 
           <ClusterTrustMethodologyPanel cluster={cluster} lang={lang} dictionary={dictionary} />
 
-          <Link
-            href={`/compare/${encodeURIComponent(cluster.id)}`}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors duration-300 ease-editorial hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200 dark:hover:bg-primary-900/30"
-          >
-            {dictionary.coverageHub.openFullCoverage}
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/compare/${encodeURIComponent(cluster.id)}`}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors duration-300 ease-editorial hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200 dark:hover:bg-primary-900/30"
+            >
+              {dictionary.coverageHub.openFullCoverage}
+            </Link>
+            <ShareLinkButton
+              path={`/compare/${encodeURIComponent(cluster.id)}`}
+              title={cluster.title}
+              summary={summary}
+            />
+          </div>
 
           <button
             onClick={() => setExpanded((value) => !value)}

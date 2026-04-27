@@ -20,23 +20,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const description = cluster.aiNeutralSummary || cluster.neutralSummary || cluster.commonFacts || 'Explore related coverage from Warka.'
   const url = `${siteUrl}/compare/${encodeURIComponent(cluster.id)}`
+  const imageUrl = `${url}/opengraph-image`
+  const title = `Compare Coverage: ${cluster.title}`
 
   return {
-    title: cluster.title,
+    title,
     description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title: cluster.title,
+      title,
       description,
       type: 'article',
       url,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
     },
     twitter: {
-      card: 'summary',
-      title: cluster.title,
+      card: 'summary_large_image',
+      title,
       description,
+      images: [imageUrl],
     },
   }
 }

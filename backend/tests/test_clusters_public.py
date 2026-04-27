@@ -46,15 +46,15 @@ def client(db_session: Session) -> Iterator[TestClient]:
     yield TestClient(app)
 
 
-def _source(source_id: str, name: str) -> models.Source:
+def _source(source_id: str, name: str, language: str = "so", category: str = "news") -> models.Source:
     return models.Source(
         id=source_id,
         name=name,
         base_url=f"https://{source_id}.example.com",
         feed_url=f"https://{source_id}.example.com/rss",
-        category="news",
+        category=category,
         description=f"{name} feed",
-        language="so",
+        language=language,
         country="SO",
         is_active=True,
     )
@@ -97,7 +97,7 @@ def _cluster(cluster_id: str, title: str, created_at: datetime) -> models.Cluste
         key_themes=["politics"],
         consensus_level="medium",
         story_count=0,
-        confidence_score=80,
+        confidence_score=80 if cluster_id == "renderable" else 55,
         event_signature={},
         created_at=created_at,
     )
@@ -106,8 +106,8 @@ def _cluster(cluster_id: str, title: str, created_at: datetime) -> models.Cluste
 def _seed_cluster_data(session: Session) -> None:
     now = datetime.now(timezone.utc)
     source_a = _source("source-a", "Source A")
-    source_b = _source("source-b", "Source B")
-    source_c = _source("source-c", "Source C")
+    source_b = _source("source-b", "Source B", language="en", category="international")
+    source_c = _source("source-c", "Source C", language="en", category="humanitarian")
 
     renderable = _cluster("renderable", "Renderable cluster", now - timedelta(hours=2))
     older_renderable = _cluster("older-renderable", "Older renderable cluster", now - timedelta(hours=3))
@@ -209,6 +209,49 @@ def test_clusters_filter_uses_any_matching_story_after_renderability(client: Tes
     body = response.json()
     assert body["total"] == 1
     assert body["items"][0]["id"] == "older-renderable"
+
+
+def test_clusters_can_filter_by_language(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&language=en")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 2
+    assert [cluster["id"] for cluster in body["items"]] == ["renderable", "older-renderable"]
+
+
+def test_clusters_can_filter_by_source_category(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&source_category=humanitarian")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == "older-renderable"
+
+
+def test_clusters_can_filter_by_confidence(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&confidence=high")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == "renderable"
+
+
+def test_clusters_can_filter_by_recency(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&recent_hours=2")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == "renderable"
+
+
+def test_clusters_can_filter_by_min_source_count(client: TestClient) -> None:
+    response = client.get("/api/clusters?limit=10&offset=0&renderable_only=true&min_sources=3")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 0
 
 
 def test_get_cluster_returns_renderable_cluster(client: TestClient) -> None:

@@ -18,6 +18,8 @@ router = APIRouter(prefix="/api", tags=["clusters"])
 
 ALLOWED_AI_REVIEW_STATUSES = {"unreviewed", "good", "weak", "misleading", "hallucinated"}
 ALLOWED_COMPARE_FILTERS = {"somalia", "world", "politics", "security", "humanitarian", "economy"}
+ALLOWED_CONFIDENCE_FILTERS = {"low", "medium", "high"}
+ALLOWED_LANGUAGE_FILTERS = {"so", "en"}
 
 
 def _normalize_filter(value: Optional[str]) -> Optional[str]:
@@ -25,6 +27,20 @@ def _normalize_filter(value: Optional[str]) -> Optional[str]:
     if normalized in ALLOWED_COMPARE_FILTERS:
         return normalized
     return None
+
+
+def _normalize_allowed(value: Optional[str], allowed: set[str]) -> Optional[str]:
+    normalized = (value or "").strip().lower() or None
+    if normalized in allowed:
+        return normalized
+    return None
+
+
+def _normalize_public_string(value: Optional[str]) -> Optional[str]:
+    normalized = (value or "").strip().lower()
+    if not normalized or len(normalized) > 80:
+        return None
+    return normalized
 
 
 @router.get("/clusters", response_model=PaginatedResponse[Cluster])
@@ -37,6 +53,12 @@ def get_clusters(
     category: Optional[str] = Query(default=None),
     region: Optional[str] = Query(default=None),
     source_id: Optional[str] = Query(default=None),
+    language: Optional[str] = Query(default=None),
+    source_category: Optional[str] = Query(default=None),
+    confidence: Optional[str] = Query(default=None),
+    recent_hours: Optional[int] = Query(default=None, ge=1, le=720),
+    min_sources: Optional[int] = Query(default=None, ge=1, le=50),
+    max_sources: Optional[int] = Query(default=None, ge=1, le=50),
     db: Session = Depends(get_db),
 ) -> PaginatedResponse[Cluster]:
     repository = ClusterRepository(db)
@@ -46,6 +68,9 @@ def get_clusters(
     normalized_category = _normalize_filter(category)
     normalized_region = _normalize_filter(region)
     normalized_source_id = (source_id or "").strip() or None
+    normalized_language = _normalize_allowed(language, ALLOWED_LANGUAGE_FILTERS)
+    normalized_source_category = _normalize_public_string(source_category)
+    normalized_confidence = _normalize_allowed(confidence, ALLOWED_CONFIDENCE_FILTERS)
 
     clusters = repository.list_paginated(
         limit=limit,
@@ -56,6 +81,12 @@ def get_clusters(
         category=normalized_category,
         region=normalized_region,
         source_id=normalized_source_id,
+        language=normalized_language,
+        source_category=normalized_source_category,
+        confidence=normalized_confidence,
+        recent_hours=recent_hours,
+        min_sources=min_sources,
+        max_sources=max_sources,
     )
     return PaginatedResponse[Cluster](
         items=[map_cluster_to_response(cluster) for cluster in clusters],
@@ -66,6 +97,12 @@ def get_clusters(
             category=normalized_category,
             region=normalized_region,
             source_id=normalized_source_id,
+            language=normalized_language,
+            source_category=normalized_source_category,
+            confidence=normalized_confidence,
+            recent_hours=recent_hours,
+            min_sources=min_sources,
+            max_sources=max_sources,
         ),
         limit=limit,
         offset=offset,

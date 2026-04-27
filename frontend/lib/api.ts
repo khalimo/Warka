@@ -20,6 +20,15 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
 
+export type CompareClusterLensFilters = {
+  language?: string
+  sourceCategory?: string
+  confidence?: string
+  recentHours?: number
+  minSources?: number
+  maxSources?: number
+}
+
 class ApiClient {
   private async fetchJSON<T>(endpoint: string): Promise<T | null> {
     if (!API_BASE_URL) {
@@ -81,7 +90,8 @@ class ApiClient {
     hasAISynthesis?: boolean,
     aiReviewStatus?: string,
     renderableOnly = true,
-    filter?: string
+    filter?: string,
+    lensFilters: CompareClusterLensFilters = {}
   ): Promise<PaginatedResponse<CompareCluster> | null> {
     const params = new URLSearchParams({
       limit: String(limit),
@@ -100,6 +110,24 @@ class ApiClient {
       } else {
         params.set('category', filter)
       }
+    }
+    if (lensFilters.language) {
+      params.set('language', lensFilters.language)
+    }
+    if (lensFilters.sourceCategory) {
+      params.set('source_category', lensFilters.sourceCategory)
+    }
+    if (lensFilters.confidence) {
+      params.set('confidence', lensFilters.confidence)
+    }
+    if (lensFilters.recentHours) {
+      params.set('recent_hours', String(lensFilters.recentHours))
+    }
+    if (lensFilters.minSources) {
+      params.set('min_sources', String(lensFilters.minSources))
+    }
+    if (lensFilters.maxSources) {
+      params.set('max_sources', String(lensFilters.maxSources))
     }
     const result = await this.fetchJSON<PaginatedResponse<BackendCluster>>(
       `/api/clusters?${params.toString()}`

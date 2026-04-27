@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app import models
+from app.utils.dates import utc_now
 
 
 class ClusterRepository:
@@ -26,18 +27,41 @@ class ClusterRepository:
         category: Optional[str] = None,
         region: Optional[str] = None,
         source_id: Optional[str] = None,
+        language: Optional[str] = None,
+        source_category: Optional[str] = None,
+        confidence: Optional[str] = None,
+        recent_hours: Optional[int] = None,
+        min_sources: Optional[int] = None,
+        max_sources: Optional[int] = None,
     ) -> int:
-        if renderable_only or category or region or source_id:
+        has_story_lens_filters = any(
+            value is not None
+            for value in [category, region, source_id, language, source_category, recent_hours, min_sources, max_sources]
+        )
+        if renderable_only or has_story_lens_filters:
             stmt = select(models.Cluster.id)
             if renderable_only:
                 stmt = stmt.where(models.Cluster.id.in_(self._renderable_ids_select()))
-            if category or region or source_id:
-                stmt = stmt.where(models.Cluster.id.in_(self._story_filtered_ids_select(category, region, source_id)))
-            stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status)
+            if has_story_lens_filters:
+                stmt = stmt.where(
+                    models.Cluster.id.in_(
+                        self._story_filtered_ids_select(
+                            category=category,
+                            region=region,
+                            source_id=source_id,
+                            language=language,
+                            source_category=source_category,
+                            recent_hours=recent_hours,
+                            min_sources=min_sources,
+                            max_sources=max_sources,
+                        )
+                    )
+                )
+            stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status, confidence)
             return int(self.db.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
 
         stmt = select(func.count(models.Cluster.id))
-        stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status)
+        stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status, confidence)
         return int(self.db.scalar(stmt) or 0)
 
     def _apply_cluster_filters(
@@ -45,6 +69,7 @@ class ClusterRepository:
         stmt,
         has_ai_synthesis: Optional[bool] = None,
         ai_review_status: Optional[str] = None,
+        confidence: Optional[str] = None,
     ):
         if has_ai_synthesis is not None:
             stmt = stmt.where(models.Cluster.has_ai_synthesis.is_(has_ai_synthesis))
@@ -55,6 +80,12 @@ class ClusterRepository:
                 )
             else:
                 stmt = stmt.where(models.Cluster.ai_review_status == ai_review_status)
+        if confidence == "high":
+            stmt = stmt.where(models.Cluster.confidence_score >= 75)
+        elif confidence == "medium":
+            stmt = stmt.where(models.Cluster.confidence_score >= 50, models.Cluster.confidence_score < 75)
+        elif confidence == "low":
+            stmt = stmt.where(models.Cluster.confidence_score < 50)
         return stmt
 
     def _story_filtered_ids_select(
@@ -62,14 +93,33 @@ class ClusterRepository:
         category: Optional[str] = None,
         region: Optional[str] = None,
         source_id: Optional[str] = None,
+        language: Optional[str] = None,
+        source_category: Optional[str] = None,
+        recent_hours: Optional[int] = None,
+        min_sources: Optional[int] = None,
+        max_sources: Optional[int] = None,
     ):
-        stmt = select(models.Story.cluster_id).where(models.Story.cluster_id.is_not(None)).group_by(models.Story.cluster_id)
+        stmt = select(models.Story.cluster_id).where(models.Story.cluster_id.is_not(None))
+        if language or source_category:
+            stmt = stmt.join(models.Story.source)
         if category:
             stmt = stmt.where(func.lower(models.Story.category) == category.lower())
         if region:
             stmt = stmt.where(func.lower(models.Story.region) == region.lower())
         if source_id:
             stmt = stmt.where(models.Story.source_id == source_id)
+        if language:
+            stmt = stmt.where(func.lower(models.Source.language).like(f"{language.lower()}%"))
+        if source_category:
+            stmt = stmt.where(func.lower(models.Source.category) == source_category.lower())
+        if recent_hours:
+            cutoff = utc_now() - timedelta(hours=recent_hours)
+            stmt = stmt.where(models.Story.published_at >= cutoff)
+        stmt = stmt.group_by(models.Story.cluster_id)
+        if min_sources:
+            stmt = stmt.having(func.count(distinct(models.Story.source_id)) >= min_sources)
+        if max_sources:
+            stmt = stmt.having(func.count(distinct(models.Story.source_id)) <= max_sources)
         return stmt
 
     def _renderable_ids_select(self):
@@ -101,13 +151,35 @@ class ClusterRepository:
         category: Optional[str] = None,
         region: Optional[str] = None,
         source_id: Optional[str] = None,
+        language: Optional[str] = None,
+        source_category: Optional[str] = None,
+        confidence: Optional[str] = None,
+        recent_hours: Optional[int] = None,
+        min_sources: Optional[int] = None,
+        max_sources: Optional[int] = None,
     ) -> list[models.Cluster]:
         stmt = self._base_select().order_by(models.Cluster.created_at.desc())
-        stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status)
+        stmt = self._apply_cluster_filters(stmt, has_ai_synthesis, ai_review_status, confidence)
         if renderable_only:
             stmt = stmt.where(models.Cluster.id.in_(self._renderable_ids_select()))
-        if category or region or source_id:
-            stmt = stmt.where(models.Cluster.id.in_(self._story_filtered_ids_select(category, region, source_id)))
+        if any(
+            value is not None
+            for value in [category, region, source_id, language, source_category, recent_hours, min_sources, max_sources]
+        ):
+            stmt = stmt.where(
+                models.Cluster.id.in_(
+                    self._story_filtered_ids_select(
+                        category=category,
+                        region=region,
+                        source_id=source_id,
+                        language=language,
+                        source_category=source_category,
+                        recent_hours=recent_hours,
+                        min_sources=min_sources,
+                        max_sources=max_sources,
+                    )
+                )
+            )
         stmt = stmt.offset(offset).limit(limit)
         return list(self.db.scalars(stmt).unique())
 
