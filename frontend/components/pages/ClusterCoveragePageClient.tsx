@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, CalendarClock, ExternalLink } from 'lucide-react'
 import { ShareLinkButton } from '@/components/share/ShareLinkButton'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
@@ -25,7 +25,89 @@ function confidenceTone(confidence: number) {
 }
 
 function sortStories(stories: Story[]) {
-  return [...stories].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  return [...stories].sort((a, b) => {
+    const aTime = getStoryTime(a)
+    const bTime = getStoryTime(b)
+
+    if (aTime === null && bTime === null) {
+      return a.title.localeCompare(b.title)
+    }
+
+    if (aTime === null) {
+      return 1
+    }
+
+    if (bTime === null) {
+      return -1
+    }
+
+    return aTime - bTime
+  })
+}
+
+function getStoryTime(story: Story) {
+  const time = new Date(story.publishedAt).getTime()
+  return Number.isFinite(time) ? time : null
+}
+
+function getTimelineDate(story: Story) {
+  const time = getStoryTime(story)
+  return time === null ? null : new Date(time)
+}
+
+function formatTimelineDate(date: Date | null, lang: string) {
+  if (!date) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat(lang, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
+}
+
+function formatTimelineTime(date: Date | null, lang: string) {
+  if (!date) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat(lang, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+function getDayKey(story: Story) {
+  const date = getTimelineDate(story)
+  return date ? date.toISOString().slice(0, 10) : 'unknown'
+}
+
+function groupStoriesByDay(stories: Story[]) {
+  return stories.reduce<Array<{ key: string; date: Date | null; stories: Story[] }>>((groups, story) => {
+    const key = getDayKey(story)
+    const existing = groups.find((group) => group.key === key)
+
+    if (existing) {
+      existing.stories.push(story)
+      return groups
+    }
+
+    groups.push({
+      key,
+      date: getTimelineDate(story),
+      stories: [story],
+    })
+    return groups
+  }, [])
+}
+
+function storyLanguageLabel(story: Story) {
+  return (story.source.language || story.lang || '').toUpperCase() || '—'
+}
+
+function storyRegionLabel(story: Story) {
+  return [story.region, story.category].filter(Boolean).join(' / ')
 }
 
 export function ClusterCoveragePageClient({ cluster }: { cluster: CompareCluster | null }) {
@@ -55,6 +137,9 @@ export function ClusterCoveragePageClient({ cluster }: { cluster: CompareCluster
   }
 
   const stories = sortStories(cluster.stories)
+  const timelineGroups = groupStoriesByDay(stories)
+  const firstStory = stories[0]
+  const latestStory = stories[stories.length - 1]
   const summary = cluster.aiNeutralSummary || cluster.neutralSummary || cluster.commonFacts
   const differences = cluster.aiCoverageDifferences || cluster.coverageDifferences
   const sourceStats = getCompareSourceStats(cluster, dictionary)
@@ -164,49 +249,129 @@ export function ClusterCoveragePageClient({ cluster }: { cluster: CompareCluster
                 subtitle={dictionary.coverageHub.timelineSubtitle}
               />
               {stories.length > 0 ? (
-                <div className="section-surface overflow-hidden">
-                  <div className="divide-y divide-[#dfd4c3] dark:divide-white/10">
-                    {stories.map((story, index) => (
-                      <article key={story.id} className="grid gap-4 p-5 sm:grid-cols-[8rem_minmax(0,1fr)] sm:p-6">
-                        <div className="text-sm font-semibold text-ink/56 dark:text-[#bdb6ad]">
-                          <TimeAgo date={story.publishedAt} />
-                          <div className="mt-2 h-full border-l border-[#dfd4c3] pl-3 text-xs uppercase tracking-[0.14em] text-ink/40 dark:border-white/10 dark:text-[#9d968d]">
-                            {index === 0 ? dictionary.coverageHub.latestReport : dictionary.coverageHub.relatedReport}
+                <div className="space-y-5">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {[firstStory, latestStory].filter(Boolean).map((story, index) => {
+                      const date = getTimelineDate(story)
+                      const label = index === 0 ? dictionary.coverageHub.firstReported : dictionary.coverageHub.latestUpdate
+
+                      return (
+                        <div key={`${label}-${story.id}`} className="rounded-editorial border border-[#ded2c0] bg-white/82 p-4 dark:border-white/10 dark:bg-[#182124]">
+                          <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-primary-700 dark:text-primary-200">
+                            <CalendarClock className="h-4 w-4" aria-hidden="true" />
+                            {label}
                           </div>
-                        </div>
-                        <div>
-                          <div className="mb-3 flex flex-wrap items-center gap-2">
-                            <StoryLanguageBadge story={story} compact />
-                            <SourceBadge source={story.source} size="sm" />
-                          </div>
-                          <h3 className="font-serif text-xl font-bold leading-tight text-ink dark:text-[#fbf7f0]">
-                            <Link href={`/story/${story.slug}`} className="editorial-link hover:text-primary-700 dark:hover:text-primary-200">
-                              {getStoryHeadline(story, lang)}
-                            </Link>
-                          </h3>
-                          <p className="mt-2 text-sm leading-7 text-ink/70 dark:text-[#d8d2ca]">
-                            {getStoryExcerpt(story, lang)}
+                          <Link
+                            href={`/story/${story.slug}`}
+                            className="mt-2 block font-serif text-lg font-bold leading-tight text-ink transition-colors hover:text-primary-700 dark:text-[#fbf7f0] dark:hover:text-primary-200"
+                          >
+                            {getStoryHeadline(story, lang)}
+                          </Link>
+                          <p className="mt-2 text-sm leading-6 text-ink/62 dark:text-[#cfc8be]">
+                            {story.source.name}
+                            {' · '}
+                            {date ? formatTimelineDate(date, lang) : dictionary.coverageHub.unknownDate}
                           </p>
-                          <div className="mt-4 flex flex-wrap gap-3">
-                            <Link
-                              href={`/story/${story.slug}`}
-                              className="inline-flex min-h-[40px] items-center rounded-full border border-[#d8cab7] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink transition-colors hover:bg-paper dark:border-white/10 dark:bg-[#141d1f] dark:text-[#fbf7f0]"
-                            >
-                              {dictionary.coverageHub.readOnWarka}
-                            </Link>
-                            <Link
-                              href={story.originalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200"
-                            >
-                              {dictionary.coverageHub.originalSource}
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </Link>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="section-surface overflow-hidden">
+                    <div className="divide-y divide-[#dfd4c3] dark:divide-white/10">
+                      {timelineGroups.map((group) => (
+                        <div key={group.key}>
+                          <div className="bg-paper/80 px-5 py-3 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-ink/50 dark:bg-[#141d1f] dark:text-[#b7b1a8] sm:px-6">
+                            {group.date ? formatTimelineDate(group.date, lang) : dictionary.coverageHub.unknownDate}
+                          </div>
+                          <div className="divide-y divide-[#e7dccf] dark:divide-white/10">
+                            {group.stories.map((story) => {
+                              const date = getTimelineDate(story)
+                              const isFirst = firstStory?.id === story.id
+                              const isLatest = latestStory?.id === story.id
+                              const timeLabel = date ? formatTimelineTime(date, lang) : dictionary.coverageHub.unknownTime
+
+                              return (
+                                <article key={story.id} className="grid gap-4 p-5 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:p-6">
+                                  <div className="relative text-sm font-semibold text-ink/56 dark:text-[#bdb6ad]">
+                                    <div className="flex items-center gap-2 sm:block">
+                                      <span className="inline-flex min-w-[4.75rem] justify-center rounded-full border border-[#d8cab7] bg-white px-3 py-1.5 text-xs uppercase tracking-[0.12em] text-ink/62 dark:border-white/10 dark:bg-[#141d1f] dark:text-[#d9d3ca] sm:justify-start">
+                                        {timeLabel}
+                                      </span>
+                                      {date ? (
+                                        <span className="text-xs text-ink/42 dark:text-[#9d968d] sm:mt-2 sm:block">
+                                          <TimeAgo date={story.publishedAt} />
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    <div className="mt-3 hidden min-h-[calc(100%-2rem)] border-l border-[#dfd4c3] pl-3 text-xs uppercase tracking-[0.14em] text-ink/40 dark:border-white/10 dark:text-[#9d968d] sm:block">
+                                      {isFirst
+                                        ? dictionary.coverageHub.firstReported
+                                        : isLatest
+                                          ? dictionary.coverageHub.latestUpdate
+                                          : dictionary.coverageHub.relatedReport}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                                      <StoryLanguageBadge story={story} compact />
+                                      <SourceBadge source={story.source} size="sm" />
+                                      <span className="rounded-full border border-[#ded2c0] bg-paper px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-ink/50 dark:border-white/10 dark:bg-[#141d1f] dark:text-[#bdb6ad]">
+                                        {dictionary.coverageHub.sourceLanguage}: {storyLanguageLabel(story)}
+                                      </span>
+                                      {storyRegionLabel(story) ? (
+                                        <span className="rounded-full border border-[#ded2c0] bg-paper px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-ink/50 dark:border-white/10 dark:bg-[#141d1f] dark:text-[#bdb6ad]">
+                                          {storyRegionLabel(story)}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    <h3 className="font-serif text-xl font-bold leading-tight text-ink dark:text-[#fbf7f0]">
+                                      <Link href={`/story/${story.slug}`} className="editorial-link hover:text-primary-700 dark:hover:text-primary-200">
+                                        {getStoryHeadline(story, lang)}
+                                      </Link>
+                                    </h3>
+                                    <p className="mt-2 text-sm leading-7 text-ink/70 dark:text-[#d8d2ca]">
+                                      {getStoryExcerpt(story, lang)}
+                                    </p>
+                                    <dl className="mt-4 grid gap-2 text-xs leading-5 text-ink/56 dark:text-[#bdb6ad] sm:grid-cols-2">
+                                      <div>
+                                        <dt className="font-semibold uppercase tracking-[0.12em] text-ink/38 dark:text-[#9d968d]">
+                                          {dictionary.coverageHub.sourceType}
+                                        </dt>
+                                        <dd className="mt-1 capitalize">{story.source.category || story.category || dictionary.coverageHub.sourceFallback}</dd>
+                                      </div>
+                                      <div>
+                                        <dt className="font-semibold uppercase tracking-[0.12em] text-ink/38 dark:text-[#9d968d]">
+                                          {dictionary.coverageHub.publishedAt}
+                                        </dt>
+                                        <dd className="mt-1">{date ? `${formatTimelineDate(date, lang)} · ${timeLabel}` : dictionary.coverageHub.unknownDate}</dd>
+                                      </div>
+                                    </dl>
+                                    <div className="mt-4 flex flex-wrap gap-3">
+                                      <Link
+                                        href={`/story/${story.slug}`}
+                                        className="inline-flex min-h-[40px] items-center rounded-full border border-[#d8cab7] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink transition-colors hover:bg-paper dark:border-white/10 dark:bg-[#141d1f] dark:text-[#fbf7f0]"
+                                      >
+                                        {dictionary.coverageHub.readOnWarka}
+                                      </Link>
+                                      <Link
+                                        href={story.originalUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-primary-700 transition-colors hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200"
+                                      >
+                                        {dictionary.coverageHub.originalSource}
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                      </Link>
+                                    </div>
+                                  </div>
+                                </article>
+                              )
+                            })}
                           </div>
                         </div>
-                      </article>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : (
