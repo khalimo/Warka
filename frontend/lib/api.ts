@@ -11,6 +11,7 @@ import {
 } from './types'
 import {
   mapHomePageData,
+  mapCluster,
   mapPaginatedClusters,
   mapPaginatedStories,
   mapSource,
@@ -104,6 +105,16 @@ class ApiClient {
       `/api/clusters?${params.toString()}`
     )
     return result ? mapPaginatedClusters(result) : null
+  }
+
+  async getCompareCluster(clusterId: string, renderableOnly = true): Promise<CompareCluster | null> {
+    const params = new URLSearchParams({
+      renderable_only: String(renderableOnly),
+    })
+    const result = await this.fetchJSON<BackendCluster>(
+      `/api/clusters/${encodeURIComponent(clusterId)}?${params.toString()}`
+    )
+    return result ? mapCluster(result) : null
   }
 
   async getSources(): Promise<Source[] | null> {

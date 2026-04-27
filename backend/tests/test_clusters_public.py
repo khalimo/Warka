@@ -209,3 +209,26 @@ def test_clusters_filter_uses_any_matching_story_after_renderability(client: Tes
     body = response.json()
     assert body["total"] == 1
     assert body["items"][0]["id"] == "older-renderable"
+
+
+def test_get_cluster_returns_renderable_cluster(client: TestClient) -> None:
+    response = client.get("/api/clusters/renderable")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "renderable"
+    assert len(body["stories"]) == 2
+    assert len(body["sources"]) == 2
+
+
+def test_get_cluster_hides_non_renderable_cluster_by_default(client: TestClient) -> None:
+    response = client.get("/api/clusters/newest-not-renderable")
+
+    assert response.status_code == 404
+
+
+def test_get_cluster_can_return_non_renderable_for_future_internal_tooling(client: TestClient) -> None:
+    response = client.get("/api/clusters/newest-not-renderable?renderable_only=false")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == "newest-not-renderable"

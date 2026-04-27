@@ -84,6 +84,13 @@ class ClusterRepository:
             )
         )
 
+    def is_renderable(self, cluster_id: str) -> bool:
+        stmt = select(models.Cluster.id).where(
+            models.Cluster.id == cluster_id,
+            models.Cluster.id.in_(self._renderable_ids_select()),
+        )
+        return self.db.scalar(stmt) is not None
+
     def list_paginated(
         self,
         limit: int,

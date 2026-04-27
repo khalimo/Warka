@@ -151,6 +151,13 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
 
           <ClusterTrustMethodologyPanel cluster={cluster} lang={lang} dictionary={dictionary} />
 
+          <Link
+            href={`/compare/${encodeURIComponent(cluster.id)}`}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700 transition-colors duration-300 ease-editorial hover:bg-primary-100 dark:border-primary-900/50 dark:bg-primary-900/20 dark:text-primary-200 dark:hover:bg-primary-900/30"
+          >
+            {dictionary.coverageHub.openFullCoverage}
+          </Link>
+
           <button
             onClick={() => setExpanded((value) => !value)}
             className="inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-primary-600 transition-colors duration-300 ease-editorial hover:text-primary-700 dark:text-primary-200 dark:hover:text-primary-100"

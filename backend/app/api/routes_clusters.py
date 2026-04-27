@@ -72,6 +72,19 @@ def get_clusters(
     )
 
 
+@router.get("/clusters/{cluster_id}", response_model=Cluster)
+def get_cluster(
+    cluster_id: str = Path(...),
+    renderable_only: bool = Query(default=True),
+    db: Session = Depends(get_db),
+) -> Cluster:
+    repository = ClusterRepository(db)
+    cluster = repository.get(cluster_id)
+    if cluster is None or (renderable_only and not repository.is_renderable(cluster_id)):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cluster not found")
+    return map_cluster_to_response(cluster)
+
+
 @router.patch(
     "/internal/clusters/{cluster_id}/ai-review",
     response_model=AIReviewUpdateResponse,
