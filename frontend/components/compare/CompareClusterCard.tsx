@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { CompareCluster } from '@/lib/types'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
+import { ClusterTrustMethodologyPanel } from '@/components/trust/TrustMethodologyPanel'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { getCompareSourceStats } from '@/lib/intelligence'
 import { getStoryExcerpt, getStoryHeadline } from '@/lib/storyPresentation'
@@ -147,6 +148,8 @@ export function CompareClusterCard({ cluster }: CompareClusterCardProps) {
               </div>
             </div>
           </div>
+
+          <ClusterTrustMethodologyPanel cluster={cluster} lang={lang} dictionary={dictionary} />
 
           <button
             onClick={() => setExpanded((value) => !value)}

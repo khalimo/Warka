@@ -6,6 +6,7 @@ import { ReadingProgress } from '@/components/story/ReadingProgress'
 import { SourceBadge } from '@/components/story/SourceBadge'
 import { StoryLanguageBadge } from '@/components/story/StoryLanguageBadge'
 import { StoryTranslationStatus } from '@/components/story/StoryTranslationStatus'
+import { StoryTrustMethodologyPanel } from '@/components/trust/TrustMethodologyPanel'
 import { useLanguage } from '@/components/language/LanguageProvider'
 import { TimeAgo } from '@/components/ui/TimeAgo'
 import { getStorySummaryBullets, getStoryTrustSignals } from '@/lib/intelligence'
@@ -54,6 +55,10 @@ export function StoryPageClient({ story }: { story: Story }) {
               : story.translations?.content?.[lang]
                 ? dictionary.translation.translatedHelper
                 : dictionary.translation.unavailableHelper}
+          </div>
+
+          <div className="mb-8 sm:mb-10">
+            <StoryTrustMethodologyPanel story={story} lang={lang} dictionary={dictionary} />
           </div>
 
           <div className="mb-8 grid gap-4 sm:mb-10 lg:grid-cols-[minmax(0,1fr)_17rem]">
